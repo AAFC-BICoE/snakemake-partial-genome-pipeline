@@ -57,9 +57,11 @@ rule all:
 
         merged_uces = directory("merged_uces"),
 
-        spades_assembly_metrics = "spades_assembly_metrics.json",
-        rnaspades_assembly_metrics = "rnaspades_assembly_metrics.json"
+        spades_assembly_metrics = "spades_assembly_metrics.tsv",
+        rnaspades_assembly_metrics = "rnaspades_assembly_metrics.tsv",
 
+        phyluce_spades_uce_metrics = "phyluce_spades_uce_metrics.tsv",
+        phyluce_rnaspades_uce_metrics = "phyluce_rnaspades_uce_metrics.tsv"
 
 rule fastqc:
     # Quality Control check on raw data before adaptor trimming
@@ -188,7 +190,7 @@ rule phyluce_spades:
     output: db="phyluce-spades/uce-search-results/probe.matches.sqlite"
     conda: "phyenv.yml"
     #Must remove the auto generated output directory before running script
-    shell: "rm -r phyluce-spades/uce-search-results; cd phyluce-spades; phyluce_assembly_match_contigs_to_probes --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
+    shell: "rm -r phyluce-spades/uce-search-results; cd phyluce-spades; phyluce_assembly_match_contigs_to_probes --keep-duplicates KEEP_DUPLICATES --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
 
 rule phyluce_assembly_get_match_counts_spades:
     input: conf="phyluce-spades/taxon.conf", db="phyluce-spades/uce-search-results/probe.matches.sqlite"
@@ -214,7 +216,7 @@ rule phyluce_rnaspades:
     output: db="phyluce-rnaspades/uce-search-results/probe.matches.sqlite"
     conda: "phyenv.yml"
     #Must remove the auto generated output directory before running script
-    shell: "rm -r phyluce-rnaspades/uce-search-results; cd phyluce-rnaspades; phyluce_assembly_match_contigs_to_probes --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
+    shell: "rm -r phyluce-rnaspades/uce-search-results; cd phyluce-rnaspades; phyluce_assembly_match_contigs_to_probes --keep-duplicates KEEP_DUPLICATES --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
 
 rule phyluce_assembly_get_match_counts_rnaspades:
     input: conf="phyluce-rnaspades/taxon.conf", db="phyluce-rnaspades/uce-search-results/probe.matches.sqlite"
@@ -245,21 +247,35 @@ rule combine_uces:
 
 rule spades_quality_metrics:
     # BBMap's Stats.sh assembly metrics for spades assemblies
-    input: expand("phyluce-spades/assemblies/{sample}_S.fasta", sample=SAMPLES)
-    output: "spades_assembly_metrics.json"
+    input: directory("phyluce-rnaspades/assemblies")
+    output: "spades_assembly_metrics.tsv"
     conda: "pg_assembly.yml"
-    shell: "for i in phyluce-spades/assemblies/*.fasta; do stats.sh in=$i format=8 >> spades_assembly_metrics.json; done"
+    shell: "statswrapper.sh {input}/*.fasta > {output}"
 
 rule rnaspades_quality_metrics:
     # BBMap's Stats.sh assembly metrics for rnaspades assemblies
-    input: expand("phyluce-rnaspades/assemblies/{sample}_R.fasta", sample=SAMPLES)
-    output: "rnaspades_assembly_metrics.json"
+    input: directory("phyluce-rnaspades/assemblies")
+    output: "rnaspades_assembly_metrics.tsv"
     conda: "pg_assembly.yml"
-    shell: "for i in phyluce-rnaspades/assemblies/*.fasta; do stats.sh in=$i format=8 >> rnaspades_assembly_metrics.json; done"
+    shell: "statswrapper.sh {input}/*.fasta > {output}"
 
 rule fastq_quality_metrics:
     # BBMap's Stats.sh assembly metrics for fastq files
     input: directory("fastq")
-    output: "fastq_metrics.json"
+    output: "fastq_metrics.tsv"
     conda: "pg_assembly.yml"
-    shell: "for i in fastq/*; do stats.sh in=$i format=8 >> fastq_metrics.json; done"
+    shell: "statswrapper.sh {input}/*.fastq.gz > {output}"
+
+rule phyluce_rnaspades_quality_metrics:
+# BBMap's Stats.sh assembly metrics for rnaspades assemblies
+    input: directory("phyluce-rnaspades/taxon-sets/all/exploded-fastas")
+    output: "phyluce_rnaspades_uce_metrics.tsv"
+    conda: "pg_assembly.yml"
+    shell: "statswrapper.sh {input}/*.fasta > {output}"
+
+rule phyluce_spades_quality_metrics:
+# BBMap's Stats.sh assembly metrics for rnaspades assemblies
+    input: directory("phyluce-spades/taxon-sets/all/exploded-fastas")
+    output: "phyluce_spades_uce_metrics.tsv"
+    conda: "pg_assembly.yml"
+    shell: "statswrapper.sh {input}/*.fasta > {output}"
