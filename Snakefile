@@ -10,7 +10,14 @@ from shutil import copyfile
 
 # Configuration Settings
 # Location of fastq folder, default "fastq"
+for f in glob.glob('fastq/*.fastq.gz'):
+    basename = os.path.basename(f)
+    new_basename = basename.replace("-","_")
+    new_path = f.replace(basename, new_basename)
+    os.rename(f, new_path)
+
 SAMPLES = set([os.path.basename(f).replace("_L001_R1_001.fastq.gz","").replace("_L001_R2_001.fastq.gz","") for f in glob.glob('fastq/*.fastq.gz')])
+
 # Location of adaptor.fa for trimming
 adaptors = "adapters.fa"
 
