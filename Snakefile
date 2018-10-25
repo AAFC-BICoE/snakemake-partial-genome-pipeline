@@ -9,7 +9,8 @@ import os
 from shutil import copyfile
 
 # Configuration Settings
-# Location of fastq folder, default "fastq"
+
+# Location of fastq folder, default "fastq". Phyluce requires files to not mix "-" and "_", so fastq files renamed
 for f in glob.glob('fastq/*.fastq.gz'):
     basename = os.path.basename(f)
     new_basename = basename.replace("-","_")
@@ -247,17 +248,17 @@ rule combine_uces:
 
 rule spades_quality_metrics:
     # BBMap's Stats.sh assembly metrics for spades assemblies
-    input: directory("phyluce-rnaspades/assemblies")
+    input: "phyluce-spades/taxon.conf"
     output: "spades_assembly_metrics.tsv"
     conda: "pg_assembly.yml"
-    shell: "statswrapper.sh {input}/*.fasta > {output}"
+    shell: "statswrapper.sh phyluce-spades/assemblies/*.fasta > {output}"
 
 rule rnaspades_quality_metrics:
     # BBMap's Stats.sh assembly metrics for rnaspades assemblies
-    input: directory("phyluce-rnaspades/assemblies")
+    input: "phyluce-rnaspades/taxon.conf"
     output: "rnaspades_assembly_metrics.tsv"
     conda: "pg_assembly.yml"
-    shell: "statswrapper.sh {input}/*.fasta > {output}"
+    shell: "statswrapper.sh phyluce-rnaspades/assemblies/*.fasta > {output}"
 
 rule fastq_quality_metrics:
     # BBMap's Stats.sh assembly metrics for fastq files

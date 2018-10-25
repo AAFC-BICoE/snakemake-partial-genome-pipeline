@@ -34,12 +34,15 @@ def main():
 def extract_data(args):
     rna_json = args.r
     spades_json = args.s
+    with open(args.o) as g:
+        g.write("")
+        files = [args.s, args.r, args.su, args.ru]
+        for file in files:
+            with open(file) as f:
+                the_dict =  csv.DictReader(f, delimiter="\t")
+                for row in the_dict:
+                    print(row["filename"], row["n_contigs"], row["ctg_N50"])
 
-    with open(rna_json) as f:
-        the_dict =  csv.DictReader(f, delimiter="\t")
-        for row in the_dict:
-            print(row["n_contigs"])
-        print(the_dict)
 
 if __name__ == "__main__":
     main()
