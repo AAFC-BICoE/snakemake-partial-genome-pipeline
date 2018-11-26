@@ -3,10 +3,13 @@ channels:
   - bioconda
   - conda-forge
   - defaults
+  - r
+  - https://conda.anaconda.org/faircloth-lab
 dependencies:
   - bbmap=38.22=h470a237_0
   - fastqc=0.11.8=0
   - spades=3.12.0=1
+  - biopython=1.72=py37h470a237_0
   - bzip2=1.0.6=h470a237_2
   - ca-certificates=2018.10.15=ha4d7672_0
   - certifi=2018.10.15=py37_1000
@@ -18,21 +21,19 @@ dependencies:
   - openssl=1.0.2p=h470a237_1
   - perl=5.26.2=h470a237_0
   - pip=18.1=py37_1000
-  - python=3.7.0=h5001a0f_4
+  - python=3.7.1=h5001a0f_0
   - readline=7.0=haf1bffa_1
-  - setuptools=40.5.0=py37_0
-  - sqlite=3.25.2=hb1c47c0_0
-  - tk=8.6.8=ha92aebf_0
-  - wheel=0.32.2=py37_0
+  - setuptools=40.6.2=py37_0
+  - sqlite=3.25.3=hb1c47c0_0
+  - tk=8.6.9=ha92aebf_0
+  - wheel=0.32.3=py37_0
   - xz=5.2.4=h470a237_1
   - zlib=1.2.11=h470a237_3
-  - biopython=1.72=py37h04863e7_0
   - blas=1.0=mkl
-  - intel-openmp=2019.0=118
-  - mkl=2019.0=118
+  - intel-openmp=2019.1=144
+  - mkl=2018.0.3=1
   - mkl_fft=1.0.4=py37h4414c95_1
   - mkl_random=1.0.1=py37h4414c95_1
   - numpy=1.15.0=py37h1b885b7_0
   - numpy-base=1.15.0=py37h3dfced4_0
   - openjdk=8.0.152=h46b5887_1
-
