@@ -1,8 +1,8 @@
 # Code to produce a default Phyluce phylogeny using Mafft and RAxML
 # Adapted from https://phyluce.readthedocs.io/en/latest/tutorial-one.html, Copyright 2012-2015, Brant C. Faircloth
 
-CORES=16
-TAXA=20
+CORES=48
+TAXA=251
 
 mkdir log
 # Run Mafft
@@ -57,7 +57,7 @@ cp -R mafft-nexus-internal-trimmed-gblocks-clean-75p-raxml
 cd mafft-nexus-internal-trimmed-gblocks-clean-75p-raxml
 raxmlHPC-PTHREADS-SSE3 \
     -m GTRGAMMA \
-    -N 20 \
+    -N 10 \
     -p 19877 \
     -n best \
     -s mafft-nexus-internal-trimmed-gblocks-clean-75p.phylip \
