@@ -3,32 +3,39 @@ Author: Jackson Eyres
 Copyright: Government of Canada
 License: MIT
 """
-
 import os
-import glob
 import argparse
-import csv
 
 
 def main():
     parser = argparse.ArgumentParser(description='Combines various log files into a CSV')
-    parser.add_argument('-s1', type=str,
-                        help='SPAdes UCE Log Input', required=True)
-    parser.add_argument('-r1', type=str,
-                        help='rnaSPAdes UCE Log Input', required=True)
-    parser.add_argument('-s2', type=str,
-                        help='SPAdes UCE Output', required=True)
-    parser.add_argument('-r2', type=str,
-                        help='rnaSPAdes UCE Output', required=True)
+    parser.add_argument('-i', type=str,
+                        help='UCE Log Input', required=True)
+    parser.add_argument('-f', type=str,
+                        help='Fastq Metrics from statswrapper.sh', required=True)
+    parser.add_argument('-o', type=str,
+                        help='UCE Output', required=True)
 
     args = parser.parse_args()
-    #print(args)
-    summarize_uces(args.r1, args.r2)
-    summarize_uces(args.s1, args.s2)
+    summarize_uces(args.i, args.f, args.o)
 
-def summarize_uces(input_path, output_path):
+
+def summarize_uces(input_path, fastq_metrics, output_path):
     with open(output_path, "w") as g:
-        with open (input_path) as f:
+        reads = {}
+
+        with open(fastq_metrics) as f:
+            lines = f.readlines()
+            lines.pop(0)
+            for line in lines:
+                split = line.rstrip().split("\t")
+                read_count = split[0]
+                file_name = split[-1]
+                sample_name = os.path.basename(file_name).\
+                    replace("_L001_R1_001.fastq.gz", "").replace("_L001_R2_001.fastq.gz", "")
+                reads[sample_name] = read_count
+
+        with open(input_path) as f:
 
             index = 0
             index_start = 0
@@ -43,20 +50,24 @@ def summarize_uces(input_path, output_path):
                 index += 1
 
             specimen_lines = lines[index_start+1: index_end]
-            g.write("Species, UCEs, Contigs, Dupes, UCEs Filtered, Contigs Filtered\n")
+            g.write("Species, Reads, Targets, Contigs, Dupes, Targets Filtered, Contigs Filtered\n")
             for line in specimen_lines:
                 if "Writing" in line:
                     continue
-                slice = line[76:]
-                split = slice.split(" ")
-                species = split[0].replace(":", "")
+                sliced = line[76:]
+                split = sliced.split(" ")
+                species = split[0].replace("_S:", "").replace("_R:", "").replace(":", "")
+                read_count = 0
+                if species in reads:
+                    read_count = reads[species]
                 uniques = split[1]
                 contigs = split[5]
                 dupes = split[7]
                 removed = split[11]
                 match = split[19]
 
-                g.write("{},{},{},{},{},{}\n".format(species, uniques, contigs, dupes, removed, match))
+                g.write("{},{},{},{},{},{}\n".format(species, read_count, uniques, contigs, dupes, removed, match))
+
 
 if __name__ == "__main__":
     main()
