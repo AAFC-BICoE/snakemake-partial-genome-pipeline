@@ -146,12 +146,16 @@ rule multiqc:
 
 rule generate_assembly_conf:
     # List of assembly names required for Phyluce Abyss processing
+    input: r1=expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES)
     output: w1="abyss_assemblies/assembly.conf"
     run:
+
         with open (output.w1, "w") as f:
             f.write("[samples]\n")
             for item in SAMPLES:
-                f.write("{}:trimmed/{}\n".format(item, item))
+                relative_path = "trimmed/{}".format(item)
+                abs_path = os.path.abspath(relative_path)
+                f.write("{}:{}\n".format(item, abs_path))
 
 
 rule abyss:
