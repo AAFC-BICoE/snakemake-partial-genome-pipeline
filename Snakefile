@@ -35,56 +35,58 @@ rule all:
         r2_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES),
 
         fastqc_trimmed_dir = directory("fastqc_trimmed"),
-
-        multiqc_report = "multiqc/multiqc_report.html",
-        multiqc_report_trimmed = "multiqc/multiqc_report_trimmed.html",
-
-        spades_assemblies = expand("spades_assemblies/{sample}/contigs.fasta", sample=SAMPLES),
-        rna_assemblies = expand("rnaspades_assemblies/{sample}/transcripts.fasta", sample=SAMPLES),
-
-        phyluce_spades_assemblies = expand("phyluce-spades/assemblies/{sample}_S.fasta", sample=SAMPLES),
-        phyluce_rnaspades_assemblies = expand("phyluce-rnaspades/assemblies/{sample}_R.fasta", sample=SAMPLES),
-
-        spades_taxon = "phyluce-spades/taxon.conf",
-        rnaspades_taxon = "phyluce-rnaspades/taxon.conf",
-
-        abyss_conf = "abyss_assemblies/assembly.conf",
-        abyss_assemblies =  expand("abyss_assemblies/{sample}/out_k31-contigs.fa", sample=SAMPLES),
-        abyss_taxon = "abyss_assemblies/taxon.conf",
-        abyss_db = "abyss_assemblies/uce-search-results/probe.matches.sqlite",
-        abyss_log = "abyss_assemblies/phyluce_assembly_match_contigs_to_probes.log",
-        abyss_taxon_sets = "abyss_assemblies/taxon-sets/all/all-taxa-incomplete.conf",
-        abyss_all_taxa = "abyss_assemblies/taxon-sets/all/all-taxa-incomplete.fasta",
-        abyss_exploded_fastas = directory("abyss_assemblies/taxon-sets/all/exploded-fastas"),
-        abyss_exploded_locus = directory("abyss_assemblies/taxon-sets/all/exploded-locus"),
-
-        spades_db = "phyluce-spades/uce-search-results/probe.matches.sqlite",
-        spades_log = "phyluce-spades/phyluce_assembly_match_contigs_to_probes.log",
-        spades_taxon_sets = "phyluce-spades/taxon-sets/all/all-taxa-incomplete.conf",
-        spades_all_taxa = "phyluce-spades/taxon-sets/all/all-taxa-incomplete.fasta",
-        spades_exploded_fastas = directory("phyluce-spades/taxon-sets/all/exploded-fastas"),
-        spades_exploded_locus = directory("phyluce-spades/taxon-sets/all/exploded-locus"),
-
-        rnaspades_db = "phyluce-rnaspades/uce-search-results/probe.matches.sqlite",
-        rnaspades_log = "phyluce-rnaspades/phyluce_assembly_match_contigs_to_probes.log",
-        rnaspades_taxon_sets = "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.conf",
-        rnaspades_all_taxa = "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.fasta",
-        rnaspades_exploded_fastas = directory("phyluce-rnaspades/taxon-sets/all/exploded-fastas"),
-        rnaspades_exploded_locus = directory("phyluce-rnaspades/taxon-sets/all/exploded-locus"),
-
-        merged_uces = directory("merged_uces"),
-
-        abyss_assembly_metrics = "abyss_assembly_metrics.tsv",
-        abyss_use_summary = "abyss_uce_summary.csv",
-        spades_assembly_metrics = "spades_assembly_metrics.tsv",
-        rnaspades_assembly_metrics = "rnaspades_assembly_metrics.tsv",
-
-        phyluce_spades_uce_metrics = "phyluce_spades_uce_metrics.tsv",
-        phyluce_rnaspades_uce_metrics = "phyluce_rnaspades_uce_metrics.tsv",
-
-
-        spades_uce_summary = "spades_uce_summary.csv",
-        rnaspades_uce_summary = "rnaspades_uce_summary.csv"
+        abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}-contigs.fa", sample=SAMPLES),
+        renamed_abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}_abyss.fasta", sample=SAMPLES),
+#
+#        multiqc_report = "multiqc/multiqc_report.html",
+#        multiqc_report_trimmed = "multiqc/multiqc_report_trimmed.html",
+#
+#        spades_assemblies = expand("spades_assemblies/{sample}/contigs.fasta", sample=SAMPLES),
+#        rna_assemblies = expand("rnaspades_assemblies/{sample}/transcripts.fasta", sample=SAMPLES),
+#
+#        phyluce_spades_assemblies = expand("phyluce-spades/assemblies/{sample}_S.fasta", sample=SAMPLES),
+#        phyluce_rnaspades_assemblies = expand("phyluce-rnaspades/assemblies/{sample}_R.fasta", sample=SAMPLES),
+#
+#        spades_taxon = "phyluce-spades/taxon.conf",
+#        rnaspades_taxon = "phyluce-rnaspades/taxon.conf",
+#
+#        abyss_conf = "abyss_assemblies/assembly.conf",
+#        abyss_assemblies =  expand("abyss_assemblies/{sample}/out_k31-contigs.fa", sample=SAMPLES),
+#        abyss_taxon = "abyss_assemblies/taxon.conf",
+#        abyss_db = "abyss_assemblies/uce-search-results/probe.matches.sqlite",
+#        abyss_log = "abyss_assemblies/phyluce_assembly_match_contigs_to_probes.log",
+#        abyss_taxon_sets = "abyss_assemblies/taxon-sets/all/all-taxa-incomplete.conf",
+#        abyss_all_taxa = "abyss_assemblies/taxon-sets/all/all-taxa-incomplete.fasta",
+#        abyss_exploded_fastas = directory("abyss_assemblies/taxon-sets/all/exploded-fastas"),
+#        abyss_exploded_locus = directory("abyss_assemblies/taxon-sets/all/exploded-locus"),
+#
+#        spades_db = "phyluce-spades/uce-search-results/probe.matches.sqlite",
+#        spades_log = "phyluce-spades/phyluce_assembly_match_contigs_to_probes.log",
+#        spades_taxon_sets = "phyluce-spades/taxon-sets/all/all-taxa-incomplete.conf",
+#        spades_all_taxa = "phyluce-spades/taxon-sets/all/all-taxa-incomplete.fasta",
+#        spades_exploded_fastas = directory("phyluce-spades/taxon-sets/all/exploded-fastas"),
+#        spades_exploded_locus = directory("phyluce-spades/taxon-sets/all/exploded-locus"),
+#
+#        rnaspades_db = "phyluce-rnaspades/uce-search-results/probe.matches.sqlite",
+#        rnaspades_log = "phyluce-rnaspades/phyluce_assembly_match_contigs_to_probes.log",
+#        rnaspades_taxon_sets = "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.conf",
+#        rnaspades_all_taxa = "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.fasta",
+#        rnaspades_exploded_fastas = directory("phyluce-rnaspades/taxon-sets/all/exploded-fastas"),
+#        rnaspades_exploded_locus = directory("phyluce-rnaspades/taxon-sets/all/exploded-locus"),
+#
+#        merged_uces = directory("merged_uces"),
+#
+#        abyss_assembly_metrics = "abyss_assembly_metrics.tsv",
+#        abyss_use_summary = "abyss_uce_summary.csv",
+#        spades_assembly_metrics = "spades_assembly_metrics.tsv",
+#        rnaspades_assembly_metrics = "rnaspades_assembly_metrics.tsv",
+#
+#        phyluce_spades_uce_metrics = "phyluce_spades_uce_metrics.tsv",
+#        phyluce_rnaspades_uce_metrics = "phyluce_rnaspades_uce_metrics.tsv",
+#
+#
+#        spades_uce_summary = "spades_uce_summary.csv",
+#        rnaspades_uce_summary = "rnaspades_uce_summary.csv"
 
 rule fastq_quality_metrics:
     # BBMap's Stats.sh assembly metrics for fastq files
@@ -157,6 +159,27 @@ rule generate_assembly_conf:
                 abs_path = os.path.abspath(relative_path)
                 f.write("{}:{}\n".format(item, abs_path))
 
+
+rule abyss_2_kmer31:
+    input:
+        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+    output:
+        "abyss_assemblies/{sample}/{sample}-contigs.fa"
+    log: "logs/abyss.{sample}.log"
+    conda: "pipeline_files/pg_assembly.yml"
+    threads: 4
+    shell:
+        "abyss-pe j={threads} --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in='../../{input.r1} ../../{input.r2}' &>{log}"
+
+rule rename_abyss_contigs:
+    input:
+        "abyss_assemblies/{sample}/{sample}-contigs.fa"
+    output:
+        "abyss_assemblies/{sample}/{sample}_abyss.fasta"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell:
+        "python pipeline_files/rename_abyss_contigs.py {input} {output}"
 
 rule abyss:
         # Assembles fastq files using default settings
