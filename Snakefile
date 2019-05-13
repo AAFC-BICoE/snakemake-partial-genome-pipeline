@@ -189,7 +189,7 @@ rule abyss:
     threads: 32
     log: "logs/phyluce_assembly_assemblo_abyss.log"
     shell:
-        "find abyss_assemblies -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 rm -R; phyluce_assembly_assemblo_abyss --conf abyss_assemblies/assembly.conf --output abyss_assemblies --clean --cores {threads} --log_path {log}"
+        "find abyss_assemblies -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 rm -R; phyluce_assembly_assemblo_abyss --conf abyss_assemblies/assembly.conf --output abyss_assemblies --clean --cores {threads} --log-path {log}"
 
 
 #rule abyss_2_kmer31:
