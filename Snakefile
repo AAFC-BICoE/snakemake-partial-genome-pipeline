@@ -303,7 +303,7 @@ rule spades:
         "spades_assemblies/{sample}/contigs.fasta"
     log: "logs/spades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    threads: 32
+    threads: 16
     shell:
         "spades.py -t {threads} -1 {input.r1} -2 {input.r2} -o spades_assemblies/{wildcards.sample} &>{log}"
 
@@ -394,7 +394,7 @@ rule rnaspades:
         "rnaspades_assemblies/{sample}/transcripts.fasta"
     log: "logs/rnaspades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    threads: 32
+    threads: 16
     shell:
         "rnaspades.py -t {threads} -1 {input.r1} -2 {input.r2} -o rnaspades_assemblies/{wildcards.sample} &>{log}"
 
