@@ -44,11 +44,15 @@ rule all:
 #        multiqc_report = "multiqc/multiqc_report.html",
 #        multiqc_report_trimmed = "multiqc/multiqc_report_trimmed.html",
 
+        ### Phyluce Abyss ###
+        abyss_conf = "abyss_assemblies/assembly.conf",
+        phyluce_abyss_assemblies = expand("abyss_assemblies/contigs/{sample}.contigs.fasta", sample=SAMPLES),
         ### Abyss 2 kmer 31 ####
-        abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}-contigs.fa", sample=SAMPLES),
-        renamed_abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}_abyss.fasta", sample=SAMPLES),
-        moved_assemblies = expand("phyluce-abyss/assemblies/{sample}_A.fasta", sample=SAMPLES),
-        abyss_assembly_metrics = "metrics/abyss_assembly_metrics.tsv",
+#        abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}-contigs.fa", sample=SAMPLES),
+#        renamed_abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}_abyss.fasta", sample=SAMPLES),
+#        moved_assemblies = expand("phyluce-abyss/assemblies/{sample}_A.fasta", sample=SAMPLES),
+#        abyss_assembly_metrics = "metrics/abyss_assembly_metrics.tsv",
+        renamed_abyss_assemblies = expand("phyluce-abyss/assemblies/{sample}_A.fasta", sample=SAMPLES),
         abyss_taxon_conf = "phyluce-abyss/taxon.conf",
         abyss_db = "phyluce-abyss/uce-search-results/probe.matches.sqlite",
         abyss_log = "phyluce-abyss/phyluce_assembly_match_contigs_to_probes.log",
@@ -161,58 +165,68 @@ rule multiqc:
 ##############################
 ###### Start of Abyss 2 ######
 
-# Older methods used with Phyluce assembly_assemblo_abyss
-#rule generate_assembly_conf:
-#    # List of assembly names required for Phyluce Abyss processing
-#    input: r1=expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES)
-#    output: w1="abyss_assemblies/assembly.conf"
-#    run:
-#        with open (output.w1, "w") as f:
-#            f.write("[samples]\n")
-#            for item in SAMPLES:
-#                relative_path = "trimmed/{}".format(item)
-#                abs_path = os.path.abspath(relative_path)
-#                f.write("{}:{}\n".format(item, abs_path))
+#Older methods used with Phyluce assembly_assemblo_abyss
+rule generate_assembly_conf:
+    # List of assembly names required for Phyluce Abyss processing
+    input: r1=expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES)
+    output: w1="abyss_assemblies/assembly.conf"
+    run:
+        with open (output.w1, "w") as f:
+            f.write("[samples]\n")
+            for item in SAMPLES:
+                relative_path = "trimmed/{}".format(item)
+                abs_path = os.path.abspath(relative_path)
+                f.write("{}:{}\n".format(item, abs_path))
 
-#rule abyss:
-#        # Assembles fastq files using default settings
+rule abyss:
+        # Assembles fastq files using default settings
+    input:
+        trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
+        abyss_conf = "abyss_assemblies/assembly.conf",
+    output: out = expand("abyss_assemblies/contigs/{sample}.contigs.fasta", sample=SAMPLES)
+    #log: "logs/abyss.{sample}.log"
+    conda: "pipeline_files/phyenv.yml"
+    threads: 32
+    log: "logs/phyluce_assembly_assemblo_abyss.log"
+    shell:
+        "find abyss_assemblies -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 rm -R; phyluce_assembly_assemblo_abyss --conf abyss_assemblies/assembly.conf --output abyss_assemblies --clean --cores {threads} --log_path {log}"
+
+
+#rule abyss_2_kmer31:
+#    # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
 #    input:
-#        trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
-#        abyss_conf = "abyss_assemblies/assembly.conf",
-#    output: out = expand("abyss_assemblies/{sample}/out_k31-contigs.fa", sample=SAMPLES)
-#    #log: "logs/abyss.{sample}.log"
-#    conda: "pipeline_files/phyenv.yml"
+#        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+#        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+#    output:
+#        "abyss_assemblies/{sample}/{sample}-contigs.fa"
+#    log: "logs/abyss.{sample}.log"
+#    conda: "pipeline_files/pg_assembly.yml"
 #    threads: 32
 #    shell:
-#        "find abyss_assemblies -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 rm -R; phyluce_assembly_assemblo_abyss --conf abyss_assemblies/assembly.conf --output abyss_assemblies --clean --cores {threads}"
-
-
-rule abyss_2_kmer31:
-    # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
-    input:
-        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
-        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
-    output:
-        "abyss_assemblies/{sample}/{sample}-contigs.fa"
-    log: "logs/abyss.{sample}.log"
-    conda: "pipeline_files/pg_assembly.yml"
-    threads: 4
-    shell:
-        "abyss-pe j={threads} --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in='../../{input.r1} ../../{input.r2}' &>{log}"
-
-rule rename_abyss_contigs:
-    input:
-        "abyss_assemblies/{sample}/{sample}-contigs.fa"
-    output:
-        "abyss_assemblies/{sample}/{sample}_abyss.fasta"
-    conda: "pipeline_files/pg_assembly.yml"
-    shell:
-        "python pipeline_files/rename_abyss_contigs.py {input} {output}"
+#        "abyss-pe j={threads} --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in='../../{input.r1} ../../{input.r2}' &>{log}"
+#
+#rule rename_abyss_contigs:
+#    input:
+#        "abyss_assemblies/{sample}/{sample}-contigs.fa"
+#    output:
+#        "abyss_assemblies/{sample}/{sample}_abyss.fasta"
+#    conda: "pipeline_files/pg_assembly.yml"
+#    shell:
+#        "python pipeline_files/rename_abyss_contigs.py {input} {output}"
+#
+#rule gather_abyss_assemblies:
+#    # Rename all spades assemblies and copy to a folder for further analysis
+#    input:
+#        assembly = "abyss_assemblies/{sample}/{sample}_abyss.fasta"
+#    output:
+#        renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
+#    run:
+#        copyfile(input.assembly,output.renamed_assembly)
 
 rule gather_abyss_assemblies:
     # Rename all spades assemblies and copy to a folder for further analysis
     input:
-        assembly = "abyss_assemblies/{sample}/{sample}_abyss.fasta"
+        assembly = "abyss_assemblies/contigs/{sample}.contigs.fasta"
     output:
         renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
     run:
@@ -289,7 +303,7 @@ rule spades:
         "spades_assemblies/{sample}/contigs.fasta"
     log: "logs/spades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    threads: 4
+    threads: 32
     shell:
         "spades.py -t {threads} -1 {input.r1} -2 {input.r2} -o spades_assemblies/{wildcards.sample} &>{log}"
 
@@ -380,7 +394,7 @@ rule rnaspades:
         "rnaspades_assemblies/{sample}/transcripts.fasta"
     log: "logs/rnaspades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    threads: 4
+    threads: 32
     shell:
         "rnaspades.py -t {threads} -1 {input.r1} -2 {input.r2} -o rnaspades_assemblies/{wildcards.sample} &>{log}"
 
