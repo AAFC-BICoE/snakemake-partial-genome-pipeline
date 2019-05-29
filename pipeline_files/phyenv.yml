@@ -6,7 +6,7 @@ channels:
 dependencies:
   - abyss=1.5.2=boost1.61_5
   - argcomplete=1.9.4=py27_0
-  - bcftools=1.9=h4da6232_0
+  - bcftools=1.9=ha228f0b_4
   - bedtools=2.27.1=he941832_2
   - biopython=1.68=py27_0
   - blas=1.0=mkl
@@ -17,7 +17,7 @@ dependencies:
   - ca-certificates=2019.1.23=0
   - certifi=2019.3.9=py27_0
   - collectl=4.0.4=2
-  - curl=7.62.0=hbc83047_0
+  - curl=7.64.1=hbc83047_0
   - dendropy=3.12.3=py_1
   - fastool=0.1.4=ha92aebf_3
   - freetype=2.9.1=h6debe1e_0
@@ -34,9 +34,9 @@ dependencies:
   - jellyfish=2.2.10=h2d50403_0
   - jemalloc=4.5.0=0
   - jpeg=9c=h470a237_0
-  - krb5=1.14.6=0
+  - krb5=1.16.1=h173b8e3_7
   - lastz=1.0.4=h470a237_2
-  - libcurl=7.62.0=h20c2e04_0
+  - libcurl=7.64.1=h20c2e04_0
   - libdeflate=1.0=h470a237_0
   - libedit=3.1.20181209=hc058e9b_0
   - libffi=3.2.1=hd88cf55_4
@@ -100,5 +100,4 @@ dependencies:
   - wheel=0.31.1=py27_1
   - xz=5.2.4=h470a237_1
   - zlib=1.2.11=h470a237_3
-prefix: /home/eyresj/miniconda3/envs/phyenv
 
