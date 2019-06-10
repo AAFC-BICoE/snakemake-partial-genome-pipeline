@@ -274,7 +274,7 @@ rule phyluce_assembly_explode_get_fastas_file_abyss:
     conda: "pipeline_files/phyenv.yml"
     # Command requires --input and not --alignments
     # Must remove the auto generated output directory before running script
-    shell: "cd phyluce-abyss/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus"
+    shell: "cd phyluce-abyss/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
 
 rule phyluce_abyss_quality_metrics:
 # BBMap's Stats.sh assembly metrics for rnaspades assemblies
@@ -365,7 +365,7 @@ rule phyluce_assembly_explode_get_fastas_file_spades:
         exploded_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated)
     conda: "pipeline_files/phyenv.yml"
     # Command requires --input and not --alignments
-    shell: "cd phyluce-spades/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus"
+    shell: "cd phyluce-spades/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
 
 rule phyluce_spades_quality_metrics:
 # BBMap's Stats.sh assembly metrics for rnaspades assemblies
@@ -446,7 +446,7 @@ rule phyluce_assembly_explode_get_fastas_file_rnaspades:
         exploded_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated)
     conda: "pipeline_files/phyenv.yml"
     # Command requires --input and not --alignments
-    shell: "cd phyluce-rnaspades/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus"
+    shell: "cd phyluce-rnaspades/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
 
 rule rnaspades_quality_metrics:
     # BBMap's Stats.sh assembly metrics for rnaspades assemblies
@@ -470,7 +470,6 @@ rule summarize_rnaspades:
 
 ###### End of rnaSPAdes    ######
 #################################
-
 
 #rule combine_uces:
 #    # Combines SPAdes and rnaSPAdes derived UCEs into singular files for further analysis

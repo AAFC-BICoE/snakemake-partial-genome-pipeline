@@ -274,7 +274,7 @@ rule phyluce_assembly_explode_get_fastas_file_abyss:
     conda: "pipeline_files/phyenv.yml"
     # Command requires --input and not --alignments
     # Must remove the auto generated output directory before running script
-    shell: "cd phyluce-abyss/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus"
+    shell: "cd phyluce-abyss/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
 
 rule phyluce_abyss_quality_metrics:
 # BBMap's Stats.sh assembly metrics for rnaspades assemblies
