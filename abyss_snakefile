@@ -85,7 +85,7 @@ rule all:
 #        rnaspades_exploded_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated),
 #        phyluce_rnaspades_uce_metrics = "metrics/phyluce_rnaspades_uce_metrics.tsv",
 
-#        merged_uces = directory("merged_uces"),
+        merged_uces = "merged_uces/all-taxa-incomplete-merged-renamed.fasta",
 
         abyss_use_summary = "summaries/abyss_uce_summary.csv",
 #        spades_uce_summary = "summaries/spades_uce_summary.csv",
@@ -472,12 +472,15 @@ rule summarize_rnaspades:
 #################################
 
 
-#rule combine_uces:
-#    # Combines SPAdes and rnaSPAdes derived UCEs into singular files for further analysis
-#    input: exploded_spades_fastas=directory("phyluce-spades/taxon-sets/all/exploded-fastas"), exploded_rnaspades_fastas=directory("phyluce-rnaspades/taxon-sets/all/exploded-fastas")
-#    output: directory("merged_uces")
-#    conda: "pipeline_files/pg_assembly.yml"
-#    shell: "python pipeline_files/merge_uces.py -o {output} -s {input.exploded_spades_fastas} -r {input.exploded_rnaspades_fastas}"
+rule combine_uces:
+    # Combines All Assemblie UCEs into merged files
+    input:
+        spades_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated),
+        rnaspades_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated),
+        abyss_fastas = expand("phyluce-abyss/taxon-sets/all/exploded-fastas/{sample}-A.unaligned.fasta", sample=SAMPLES_hyphenated)
+    output: "merged_uces/all-taxa-incomplete-merged-renamed.fasta"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "python pipeline_files/merge_uces.py -o merged_uces -s phyluce-spades/taxon-sets/all/exploded-fastas/ -r phyluce-rnaspades/taxon-sets/all/exploded-fastas/ -a phyluce-abyss/taxon-sets/all/exploded-fastas/"
 
 rule merge_reports:
     input: s1="summaries/abyss_uce_summary.csv", s2="summaries/rnaspades_uce_summary.csv", s3="summaries/spades_uce_summary.csv"

@@ -16,92 +16,101 @@ def main():
                         help='SPAdes exploded-fastas folder', required=True)
     parser.add_argument('-r', type=str,
                         help='rnaSPAdes exploded-fastas folder', required=True)
+    parser.add_argument('-a', type=str,
+                        help='Abyss exploded-fastas folder', required=True)
     args = parser.parse_args()
     print("Merging SPAdes and rnaSPAdes UCEs together into {} directory".format(args.o))
 
-    combine_uces(args.o, args.s, args.r)
+    combine_uces(args.o, args.s, args.r, args.a)
 
-def combine_uces(output_directory, spades_directory, rnaspades_directory):
+def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_directory):
 
     """
-    Takes the UCES from an rnaSPAdes and SPAdes run and creates a seperate file taking only the best sequence per UCE
+    Takes the UCES from various assembly runs and creates a seperate file taking only the best sequence per UCE
     :return:
     """
 
     # Verify folders exist
-    if os.path.isdir(spades_directory) and os.path.isdir(rnaspades_directory):
+    if os.path.isdir(spades_directory) and os.path.isdir(rnaspades_directory) and os.path.isdir(abyss_directory):
         pass
     else:
-        print("Missing either {} or {}".format(spades_directory, rnaspades_directory))
+        print("Missing either {} or {} or {}".format(spades_directory, rnaspades_directory, abyss_directory))
         return
 
     spades_fastas = glob.glob(os.path.join(spades_directory, "*.fasta"))
     rnaspades_fastas = glob.glob(os.path.join(rnaspades_directory, "*.fasta"))
+    abyss_fastas = glob.glob(os.path.join(abyss_directory, "*.fasta"))
 
     # Put all the contigs into a single dictionary
-    final_uces = {}
-    uce_change_log = []
+
+
+    specimen_dict = {}
+    # Inputs every file into a dictionary to be parsed
     for fasta in spades_fastas:
         specimen = os.path.basename(fasta)
         specimen_name = specimen.replace("-S.unaligned.fasta", "")
-        final_uces[specimen_name] = {}
-        for seq in SeqIO.parse(fasta, 'fasta'):
-            uce = seq.description.split("|")[-1]
-            final_uces[specimen_name][uce] = seq
+        specimen_dict[specimen_name] = [fasta]
 
-    # Go through each rnaSPAdes UCE contig, compare with the SPAdes ones in dictionary and pick the best
-    # The best is currently the longest
     for fasta in rnaspades_fastas:
         specimen = os.path.basename(fasta)
         specimen_name = specimen.replace("-R.unaligned.fasta", "")
+        if specimen_name in specimen_dict:
+            specimen_dict[specimen_name].append(fasta)
 
-        for seq in SeqIO.parse(fasta, 'fasta'):
-            uce = seq.description.split("|")[-1]
+    for fasta in abyss_fastas:
+        specimen = os.path.basename(fasta)
+        specimen_name = specimen.replace("-A.unaligned.fasta", "")
+        if specimen_name in specimen_dict:
+            specimen_dict[specimen_name].append(fasta)
 
-            if uce in final_uces[specimen_name]:
-                # Look for SPAdes uce
-                spades_uce = final_uces[specimen_name][uce]
-                if len(spades_uce.seq) > len(seq.seq):
-                    # SPAdes UCE is longer so change nothing:
-                    pass
-                elif len(spades_uce.seq) < len(seq.seq):
-                    # rnaSPAdes UCE is longer so use that one
-                    final_uces[specimen_name][uce] = seq
-                    change = "Specimen: {}, UCE: {}, Change: Replaced with rnaSPAdes Contig\n".format(specimen_name,
-                                                                                                      uce)
-                    uce_change_log.append(change)
+    # For each specimen, all all the UCES to a single dictionary from every file, then examine each UCE sequence and
+    # choose the one with the greatest length. Write all filtered UCEs to both a merged file, and monolythic file
+    for key, value in specimen_dict.items():
+        all_uces = {}
+        for fasta in value:
+            for seq in SeqIO.parse(fasta, 'fasta'):
+                uce = seq.description.split("|")[-1]
+                if uce in all_uces:
+                    all_uces[uce].append(seq)
                 else:
-                    # Lengths are equal between both UCEs, look for differences
-                    if spades_uce.seq == seq.seq:
-                        pass
-                    else:
-                        final_uces[specimen_name][uce] = seq
-                        change = "Specimen: {}, UCE: {}, Change: Replaced with rnaSPAdes Contig\n".format(specimen_name,
-                                                                                                          uce)
-                        uce_change_log.append(change)
-            else:
-                # Add RNA UCE
-                change = "Specimen: {}, UCE: {}, Change: Added rnaSPAdes Contig\n".format(specimen_name, uce)
-                uce_change_log.append(change)
-                final_uces[specimen_name][uce] = seq
+                    all_uces[uce] = [seq]
+        print(key, len(all_uces))
 
-    # Write Final UCES to merged file
-    new_directory = os.path.join(output_directory, "merged_uces")
-    if not os.path.exists(new_directory):
-        os.makedirs(new_directory)
+        final_uces = []
+        for k, v in all_uces.items():
+            uce = k
+            max = None
+            max_length = 0
+            for seq in v:
+                if len(seq.seq) > max_length:
+                    max = seq
+            final_uces.append(max)
 
-    for key, value in final_uces.items():
+        # Write Final UCES to merged file
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
+
         file_name = str(key) + "_merged.fasta"
-        file_path = os.path.join(new_directory, file_name)
+        file_path = os.path.join(output_directory, file_name)
         with open(file_path, "w") as f:
-            for k, seq in value.items():
+            for seq in final_uces:
                 SeqIO.write(seq, handle=f, format="fasta")
 
-    # Log all the changes made to the SPAdes UCE file to create the merged file
-    file_name = "UCE_Change_Log.txt"
-    file_path = os.path.join(new_directory, file_name)
-    with open(file_path, "w") as f:
-        f.writelines(uce_change_log)
+        file_name = "all-taxa-incomplete-merged-renamed.fasta"
+        file_path = os.path.join(output_directory, file_name)
+        with open(file_path, "a") as f:
+            for seq in final_uces:
+                uce = str(seq.id).split("_")[0]
+                specimen = key
+                seq.description = seq.id
+                seq.id = uce + "_" + specimen
+                SeqIO.write(seq, handle=f, format="fasta")
+
+        # # Log all the changes made to the SPAdes UCE file to create the merged file
+        # file_name = "UCE_Change_Log.txt"
+        # file_path = os.path.join(new_directory, file_name)
+        # with open(file_path, "a") as f:
+        #     f.writelines(uce_change_log)
 
 if __name__ == "__main__":
     main()
