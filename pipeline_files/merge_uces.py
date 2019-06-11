@@ -102,7 +102,7 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
             for seq in final_uces:
                 uce = str(seq.id).split("_")[0]
                 specimen = key
-                seq.description = seq.id
+                seq.description = "|" + uce
                 seq.id = uce + "_" + specimen
                 SeqIO.write(seq, handle=f, format="fasta")
 
