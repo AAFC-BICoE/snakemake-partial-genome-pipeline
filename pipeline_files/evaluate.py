@@ -1,4 +1,5 @@
 """
+Creates a summary report using Phyluce logs and fastq metrics from BBTools
 Author: Jackson Eyres
 Copyright: Government of Canada
 License: MIT

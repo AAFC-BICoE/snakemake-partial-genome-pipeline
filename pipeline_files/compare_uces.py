@@ -5,12 +5,12 @@ License: MIT
 """
 
 import os
-import glob
 import argparse
 import csv
 import sqlite3
 import operator
 from itertools import groupby
+
 
 def main():
     parser = argparse.ArgumentParser(description='Compares UCEs found in Phyluce generated sqlite database')
