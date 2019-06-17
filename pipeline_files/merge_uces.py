@@ -1,12 +1,16 @@
 """
+Merges the UCE targets found in Abyss, SPAdes and rnaSPAdes assemblies into a single file suitable for further
+processing with Phyluce phylogeny tools.
 Author: Jackson Eyres
 Copyright: Government of Canada
 License: MIT
 """
+
 from Bio import SeqIO
 import os
 import glob
 import argparse
+
 
 def main():
     parser = argparse.ArgumentParser(description='Merges Phyluce UCEs from SPAdes and rnaSPAdes')
@@ -23,8 +27,8 @@ def main():
 
     combine_uces(args.o, args.s, args.r, args.a)
 
-def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_directory):
 
+def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_directory):
     """
     Takes the UCES from various assembly runs and creates a seperate file taking only the best sequence per UCE
     :return:
@@ -37,15 +41,13 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
         print("Missing either {} or {} or {}".format(spades_directory, rnaspades_directory, abyss_directory))
         return
 
+    # Gather each specimen file produced from the Phyluce
     spades_fastas = glob.glob(os.path.join(spades_directory, "*.fasta"))
     rnaspades_fastas = glob.glob(os.path.join(rnaspades_directory, "*.fasta"))
     abyss_fastas = glob.glob(os.path.join(abyss_directory, "*.fasta"))
 
     # Put all the contigs into a single dictionary
-
-
     specimen_dict = {}
-    # Inputs every file into a dictionary to be parsed
     for fasta in spades_fastas:
         specimen = os.path.basename(fasta)
         specimen_name = specimen.replace("-S.unaligned.fasta", "")
@@ -63,8 +65,8 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
         if specimen_name in specimen_dict:
             specimen_dict[specimen_name].append(fasta)
 
-    # For each specimen, all all the UCES to a single dictionary from every file, then examine each UCE sequence and
-    # choose the one with the greatest length. Write all filtered UCEs to both a merged file, and monolythic file
+    # For each specimen, add all the UCES to a single dictionary from every file, then examine each UCE sequence and
+    # choose the one with the greatest length. Write all filtered UCEs to both a merged file, and monolithic file
     for key, value in specimen_dict.items():
         all_uces = {}
         for fasta in value:
@@ -78,13 +80,12 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
 
         final_uces = []
         for k, v in all_uces.items():
-            uce = k
-            max = None
+            max_uce = None
             max_length = 0
             for seq in v:
                 if len(seq.seq) > max_length:
-                    max = seq
-            final_uces.append(max)
+                    max_uce = seq
+            final_uces.append(max_uce)
 
         # Write Final UCES to merged file
         if not os.path.exists(output_directory):
@@ -111,6 +112,7 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
         # file_path = os.path.join(new_directory, file_name)
         # with open(file_path, "a") as f:
         #     f.writelines(uce_change_log)
+
 
 if __name__ == "__main__":
     main()

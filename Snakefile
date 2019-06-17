@@ -2,7 +2,7 @@
 # Author: Jackson Eyres jackson.eyres@agr.gc.ca
 # Copyright: Government of Canada
 # License: MIT
-# Version 0.1
+# Version 0.4
 
 import glob
 import os
@@ -21,6 +21,7 @@ for f in glob.glob('fastq/*.fastq.gz'):
     new_path = f.replace(basename, new_basename)
     os.rename(f, new_path)
 
+# Need sample name without the Illumina added information to the fastq files
 SAMPLES = set([os.path.basename(f).replace("_L001_R1_001.fastq.gz","").replace("_L001_R2_001.fastq.gz","") for f in glob.glob('fastq/*.fastq.gz')])
 SAMPLES_hyphenated = []
 for sample in SAMPLES:
@@ -33,6 +34,7 @@ adaptors = "pipeline_files/adapters.fa"
 
 rule all:
     input:
+        ### Fastq Processing ###
         fastq_metrics = "metrics/fastq_metrics.tsv",
         r1_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
         r2_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES),
@@ -41,6 +43,8 @@ rule all:
         fastq_output_r2 = expand("fastqc/{sample}_L001_R2_001_fastqc.html", sample=SAMPLES),
         fastq_trimmed_r1 = expand("fastqc_trimmed/{sample}_trimmed_L001_R1_001_fastqc.html", sample=SAMPLES),
         fastq_trimmed_r2 = expand("fastqc_trimmed/{sample}_trimmed_L001_R2_001_fastqc.html", sample=SAMPLES),
+
+        # MultiQC had a habit of crashing and stopping the pipeline, temporarily removed
 #        multiqc_report = "multiqc/multiqc_report.html",
 #        multiqc_report_trimmed = "multiqc/multiqc_report_trimmed.html",
 
@@ -55,6 +59,7 @@ rule all:
         spades_all_taxa = "phyluce-spades/taxon-sets/all/all-taxa-incomplete.fasta",
         spades_exploded_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated),
         phyluce_spades_uce_metrics = "metrics/phyluce_spades_uce_metrics.tsv",
+        spades_uce_summary = "summaries/spades_uce_summary.csv",
 
         ### rnaSPAdes ###
         rna_assemblies = expand("rnaspades_assemblies/{sample}/transcripts.fasta", sample=SAMPLES),
@@ -67,8 +72,6 @@ rule all:
         rnaspades_all_taxa = "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.fasta",
         rnaspades_exploded_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated),
         phyluce_rnaspades_uce_metrics = "metrics/phyluce_rnaspades_uce_metrics.tsv",
-
-        spades_uce_summary = "summaries/spades_uce_summary.csv",
         rnaspades_uce_summary = "summaries/rnaspades_uce_summary.csv",
 
 ###### Fastq Processing ######
@@ -140,6 +143,7 @@ rule multiqc:
 
 ##############################
 ###### Start of SPAdes  ######
+
 rule spades:
     # Assembles fastq files using default settings
     input:
@@ -187,6 +191,7 @@ rule spades_quality_metrics:
 # The following scripts are derived from https://phyluce.readthedocs.io/en/latest/tutorial-one.html
 # This tutorial outlines the key steps of following Phyluce to derive UCEs from probes and assemblies
 rule phyluce_spades:
+    # Matches probes against assembled contigs
     input: "phyluce-spades/taxon.conf"
     output: db="phyluce-spades/uce-search-results/probe.matches.sqlite", log="phyluce-spades/phyluce_assembly_match_contigs_to_probes.log"
     conda: "pipeline_files/phyenv.yml"
@@ -194,18 +199,21 @@ rule phyluce_spades:
     shell: "rm -r phyluce-spades/uce-search-results; cd phyluce-spades; phyluce_assembly_match_contigs_to_probes --keep-duplicates KEEP_DUPLICATES --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
 
 rule phyluce_assembly_get_match_counts_spades:
+    # Filters matches to a 1 to 1 relationship
     input: conf="phyluce-spades/taxon.conf", db="phyluce-spades/uce-search-results/probe.matches.sqlite"
     output: "phyluce-spades/taxon-sets/all/all-taxa-incomplete.conf"
     conda: "pipeline_files/phyenv.yml"
     shell: "cd phyluce-spades; phyluce_assembly_get_match_counts --locus-db uce-search-results/probe.matches.sqlite --taxon-list-config taxon.conf --taxon-group 'all' --incomplete-matrix --output taxon-sets/all/all-taxa-incomplete.conf"
 
 rule phyluce_assembly_get_fastas_from_match_counts_spades:
+    # Generates the monolithic fasta file suitable for further mafft alignment using Phyluce
     input: "phyluce-spades/uce-search-results/probe.matches.sqlite"
     output: "phyluce-spades/taxon-sets/all/all-taxa-incomplete.fasta"
     conda: "pipeline_files/phyenv.yml"
     shell: "cd phyluce-spades/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
 
 rule phyluce_assembly_explode_get_fastas_file_spades:
+    # Optional step to seperate out all matches on a per specimen level
     input: alignments="phyluce-spades/taxon-sets/all/all-taxa-incomplete.fasta"
     output:
         exploded_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated)
@@ -214,13 +222,14 @@ rule phyluce_assembly_explode_get_fastas_file_spades:
     shell: "cd phyluce-spades/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
 
 rule phyluce_spades_quality_metrics:
-# BBMap's Stats.sh assembly metrics for rnaspades assemblies
+    # BBMap's Stats.sh assembly metrics for spades assemblies
     input: expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated)
     output: "metrics/phyluce_spades_uce_metrics.tsv"
     conda: "pipeline_files/pg_assembly.yml"
     shell: "statswrapper.sh {input} > {output}"
 
 rule summarize_spades:
+    # Creates a summary file for evaulating success and failures per specimen
     input: r1="phyluce-spades/phyluce_assembly_match_contigs_to_probes.log", f1="metrics/fastq_metrics.tsv"
     output: r2="summaries/spades_uce_summary.csv"
     conda: "pipeline_files/pg_assembly.yml"
@@ -268,6 +277,7 @@ rule generate_rnaspades_taxons_conf:
                 f.write(item + "_R\n")
 
 rule phyluce_rnaspades:
+    # Matches probes against assembled contigs
     input: "phyluce-rnaspades/taxon.conf"
     output: db="phyluce-rnaspades/uce-search-results/probe.matches.sqlite", log="phyluce-rnaspades/phyluce_assembly_match_contigs_to_probes.log"
     conda: "pipeline_files/phyenv.yml"
@@ -281,12 +291,14 @@ rule phyluce_assembly_get_match_counts_rnaspades:
     shell: "cd phyluce-rnaspades; phyluce_assembly_get_match_counts --locus-db uce-search-results/probe.matches.sqlite --taxon-list-config taxon.conf --taxon-group 'all' --incomplete-matrix --output taxon-sets/all/all-taxa-incomplete.conf"
 
 rule phyluce_assembly_get_fastas_from_match_counts_rnaspades:
+    # Generates the monolithic fasta file suitable for further mafft alignment using Phyluce
     input: "phyluce-rnaspades/uce-search-results/probe.matches.sqlite"
     output: "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.fasta"
     conda: "pipeline_files/phyenv.yml"
     shell: "cd phyluce-rnaspades/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
 
 rule phyluce_assembly_explode_get_fastas_file_rnaspades:
+    # Optional step to seperate out all matches on a per specimen level
     input: alignments="phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.fasta"
     output:
         exploded_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated)
@@ -302,13 +314,14 @@ rule rnaspades_quality_metrics:
     shell: "statswrapper.sh phyluce-rnaspades/assemblies/*.fasta > {output}"
 
 rule phyluce_rnaspades_quality_metrics:
-# BBMap's Stats.sh assembly metrics for rnaspades assemblies
+    # BBMap's Stats.sh assembly metrics for rnaspades assemblies
     input: expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated)
     output: "metrics/phyluce_rnaspades_uce_metrics.tsv"
     conda: "pipeline_files/pg_assembly.yml"
     shell: "statswrapper.sh {input} > {output}"
 
 rule summarize_rnaspades:
+    # Creates a summary file for evaulating success and failures per specimen
     input: r1="phyluce-rnaspades/phyluce_assembly_match_contigs_to_probes.log", f1="metrics/fastq_metrics.tsv"
     output: r2="summaries/rnaspades_uce_summary.csv"
     conda: "pipeline_files/pg_assembly.yml"
