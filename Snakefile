@@ -192,7 +192,9 @@ rule spades_quality_metrics:
 # This tutorial outlines the key steps of following Phyluce to derive UCEs from probes and assemblies
 rule phyluce_spades:
     # Matches probes against assembled contigs
-    input: "phyluce-spades/taxon.conf"
+    input:
+        taxon = "phyluce-spades/taxon.conf",
+        assemblies = expand("phyluce-spades/assemblies/{sample}_S.fasta", sample=SAMPLES)
     output: db="phyluce-spades/uce-search-results/probe.matches.sqlite", log="phyluce-spades/phyluce_assembly_match_contigs_to_probes.log"
     conda: "pipeline_files/phyenv.yml"
     #Must remove the auto generated output directory before running script
@@ -278,7 +280,9 @@ rule generate_rnaspades_taxons_conf:
 
 rule phyluce_rnaspades:
     # Matches probes against assembled contigs
-    input: "phyluce-rnaspades/taxon.conf"
+    input:
+        taxon = "phyluce-rnaspades/taxon.conf",
+        assemblies = expand("phyluce-rnaspades/assemblies/{sample}_R.fasta", sample=SAMPLES)
     output: db="phyluce-rnaspades/uce-search-results/probe.matches.sqlite", log="phyluce-rnaspades/phyluce_assembly_match_contigs_to_probes.log"
     conda: "pipeline_files/phyenv.yml"
     #Must remove the auto generated output directory before running script
