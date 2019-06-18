@@ -209,7 +209,9 @@ rule phyluce_assembly_get_match_counts_spades:
 
 rule phyluce_assembly_get_fastas_from_match_counts_spades:
     # Generates the monolithic fasta file suitable for further mafft alignment using Phyluce
-    input: "phyluce-spades/uce-search-results/probe.matches.sqlite"
+    input:
+      db = "phyluce-spades/uce-search-results/probe.matches.sqlite",
+      conf = "phyluce-spades/taxon-sets/all/all-taxa-incomplete.conf"
     output: "phyluce-spades/taxon-sets/all/all-taxa-incomplete.fasta"
     conda: "pipeline_files/phyenv.yml"
     shell: "cd phyluce-spades/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
@@ -296,7 +298,9 @@ rule phyluce_assembly_get_match_counts_rnaspades:
 
 rule phyluce_assembly_get_fastas_from_match_counts_rnaspades:
     # Generates the monolithic fasta file suitable for further mafft alignment using Phyluce
-    input: "phyluce-rnaspades/uce-search-results/probe.matches.sqlite"
+    input:
+      db = "phyluce-rnaspades/uce-search-results/probe.matches.sqlite",
+      conf = "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.conf"
     output: "phyluce-rnaspades/taxon-sets/all/all-taxa-incomplete.fasta"
     conda: "pipeline_files/phyenv.yml"
     shell: "cd phyluce-rnaspades/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
