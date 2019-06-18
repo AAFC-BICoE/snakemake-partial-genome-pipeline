@@ -240,7 +240,9 @@ rule phyluce_assembly_get_match_counts_abyss:
     shell: "cd phyluce-abyss; phyluce_assembly_get_match_counts --locus-db uce-search-results/probe.matches.sqlite --taxon-list-config taxon.conf --taxon-group 'all' --incomplete-matrix --output taxon-sets/all/all-taxa-incomplete.conf"
 
 rule phyluce_assembly_get_fastas_from_match_counts_abyss:
-    input: "phyluce-abyss/uce-search-results/probe.matches.sqlite"
+    input:
+      db = "phyluce-abyss/uce-search-results/probe.matches.sqlite",
+      conf = "phyluce-abyss/taxon-sets/all/all-taxa-incomplete.conf"
     output: "phyluce-abyss/taxon-sets/all/all-taxa-incomplete.fasta"
     conda: "pipeline_files/phyenv.yml"
     shell: "cd phyluce-abyss/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
