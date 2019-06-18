@@ -225,7 +225,9 @@ rule generate_taxons_conf_abyss:
                 f.write(item + "_A\n")
 
 rule phyluce_abyss:
-    input: "phyluce-abyss/taxon.conf"
+    input:
+        taxon = "phyluce-abyss/taxon.conf",
+        assemblies = expand("phyluce-abyss/assemblies/{sample}_A.fasta", sample=SAMPLES)
     output: db="phyluce-abyss/uce-search-results/probe.matches.sqlite", log="phyluce-abyss/phyluce_assembly_match_contigs_to_probes.log"
     conda: "pipeline_files/phyenv.yml"
     # Must remove the auto generated output directory before running script
