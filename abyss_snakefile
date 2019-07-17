@@ -191,13 +191,15 @@ rule rename_abyss_contigs:
         "python pipeline_files/rename_abyss_contigs.py {input} {output}"
 
 rule gather_abyss_assemblies:
-    # Rename all spades assemblies and copy to a folder for further analysis
+    # Rename all spades assemblies and copy to a folder for further analysis.
+    # Abyss adds non ATGC symbols which must be removed, currently with sed
     input:
         assembly = "abyss_assemblies/{sample}/{sample}_abyss.fasta"
     output:
         renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
-    run:
-        copyfile(input.assembly,output.renamed_assembly)
+    shell:
+        "sed -e '/^[^>]/s/[^ATGCatgc]/N/g' {input.assembly} >> {output.renamed_assembly}"
+
 
 #rule gather_abyss_assemblies:
 #    # Rename all spades assemblies and copy to a folder for further analysis
