@@ -68,7 +68,7 @@ def summarize_uces(input_path, fastq_metrics, output_path):
                 removed = split[11]
                 match = split[19]
 
-                g.write("{},{},{},{},{},{}\n".format(species, read_count, uniques, contigs, dupes, removed, match))
+                g.write("{},{},{},{},{},{},{}\n".format(species, read_count, uniques, contigs, dupes, removed, match))
 
 
 if __name__ == "__main__":
