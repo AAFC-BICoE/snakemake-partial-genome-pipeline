@@ -39,10 +39,14 @@ rule all:
         r1_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
         r2_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES),
 
+        fastq_merged = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
+        fastq_unmerged = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES),
+        ihist = expand("trimmed_merged/{sample}/{sample}_ihist.txt", sample=SAMPLES),
+
         fastq_output_r1 = expand("fastqc/{sample}_L001_R1_001_fastqc.html", sample=SAMPLES),
         fastq_output_r2 = expand("fastqc/{sample}_L001_R2_001_fastqc.html", sample=SAMPLES),
-        fastq_trimmed_r1 = expand("fastqc_trimmed/{sample}_trimmed_L001_R1_001_fastqc.html", sample=SAMPLES),
-        fastq_trimmed_r2 = expand("fastqc_trimmed/{sample}_trimmed_L001_R2_001_fastqc.html", sample=SAMPLES),
+        fastq_trimmed_r1 = expand("fastqc_trimmed/{sample}_merged_fastqc.html", sample=SAMPLES),
+        fastq_trimmed_r2 = expand("fastqc_trimmed/{sample}_merged_fastqc.html", sample=SAMPLES),
 
         # MultiQC had a habit of crashing and stopping the pipeline, temporarily removed
 #        multiqc_report = "multiqc/multiqc_report.html",
@@ -129,21 +133,34 @@ rule bbduk:
         out2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz",
     log: "logs/bbduk.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    shell: "bbduk.sh in1={input.r1} out1={output.out1} in2={input.r2} out2={output.out2} ref={adaptors} qtrim=rl trimq=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &>{log}; touch {output.out1} {output.out2}"
+    shell: "bbduk.sh in1={input.r1} out1={output.out1} in2={input.r2} out2={output.out2} ref={adaptors} ktrim=r k=23 mink=11 hdist=1 tpe tbo &>{log}; touch {output.out1} {output.out2}"
+
+rule bbmerge:
+    # Merges paired end reads together
+    input:
+        r1 = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
+        r2 = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES)
+    output:
+        out_merged = "trimmed_merged/{sample}/{sample}_merged.fq",
+        out_unmerged = "trimmed_merged/{sample}/{sample}_unmerged.fq",
+        ihist = "trimmed_merged/{sample}/{sample}_ihist.txt"
+    log: "logs/bbmerge.{sample}.log"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "bbmerge.sh in={input.r1} in2={input.r2} out={output.out_merged} outu={output.out_unmerged} ihist={output.ihist} &>{log}"
 
 
 rule fastqc_trimmed:
     # Quality Control check after adaptor trimming
     input:
-        r1 = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
-        r2 = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES)
+        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
+        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
     output:
-        o1 = expand("fastqc_trimmed/{sample}_trimmed_L001_R1_001_fastqc.html", sample=SAMPLES),
-        o2 = expand("fastqc_trimmed/{sample}_trimmed_L001_R2_001_fastqc.html", sample=SAMPLES)
+        o1 = expand("fastqc_trimmed/{sample}_merged_fastqc.html", sample=SAMPLES),
+        o2 = expand("fastqc_trimmed/{sample}_unmerged_fastqc.html", sample=SAMPLES)
     log: "logs/fastqc_trimmed.log"
     conda: "pipeline_files/pg_assembly.yml"
     shell:
-        "fastqc -o fastqc_trimmed {input.r1} {input.r2} &>{log}"
+        "fastqc -o fastqc_trimmed {input.i1} {input.i2} &>{log}"
 
 
 rule multiqc:
@@ -166,15 +183,15 @@ rule multiqc:
 rule spades:
     # Assembles fastq files using default settings
     input:
-        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
-        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
+        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
     output:
         "spades_assemblies/{sample}/contigs.fasta"
     log: "logs/spades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
     threads: 16
     shell:
-        "spades.py -t {threads} -1 {input.r1} -2 {input.r2} -o spades_assemblies/{wildcards.sample} &>{log}"
+        "spades.py -t {threads} --merged {input.i1} -s {input.i2} -o spades_assemblies/{wildcards.sample} &>{log}"
 
 
 rule gather_assemblies:
@@ -266,15 +283,15 @@ rule summarize_spades:
 rule rnaspades:
     # Variation of SPAdes that assembles fastq files using default settings
     input:
-        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
-        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
+        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
     output:
         "rnaspades_assemblies/{sample}/transcripts.fasta"
     log: "logs/rnaspades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
     threads: 16
     shell:
-        "rnaspades.py -t {threads} -1 {input.r1} -2 {input.r2} -o rnaspades_assemblies/{wildcards.sample} &>{log}"
+        "rnaspades.py -t {threads} --merged {input.i1} -s {input.i2} -o rnaspades_assemblies/{wildcards.sample} &>{log}"
 
 rule gather_rna_assemblies:
     # Rename all rnaspades assemblies and copy to a folder for further analysis
@@ -390,15 +407,15 @@ rule summarize_rnaspades:
 rule abyss_2_kmer31:
     # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
     input:
-        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
-        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
+        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
     output:
         "abyss_assemblies/{sample}/{sample}-contigs.fa"
     log: "logs/abyss.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
     threads: 32
     shell:
-        "abyss-pe j={threads} --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in='../../{input.r1} ../../{input.r2}' &>{log}"
+        "abyss-pe j={threads} --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in=../../{input.i2} se=../../{input.i1} &>{log}"
 
 rule rename_abyss_contigs:
     input:
