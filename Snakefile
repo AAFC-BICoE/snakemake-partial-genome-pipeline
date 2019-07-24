@@ -138,8 +138,8 @@ rule bbduk:
 rule bbmerge:
     # Merges paired end reads together
     input:
-        r1 = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
-        r2 = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES)
+        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
     output:
         out_merged = "trimmed_merged/{sample}/{sample}_merged.fq",
         out_unmerged = "trimmed_merged/{sample}/{sample}_unmerged.fq",
@@ -183,8 +183,8 @@ rule multiqc:
 rule spades:
     # Assembles fastq files using default settings
     input:
-        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
-        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
+        i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
+        i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
     output:
         "spades_assemblies/{sample}/contigs.fasta"
     log: "logs/spades.{sample}.log"
@@ -283,8 +283,8 @@ rule summarize_spades:
 rule rnaspades:
     # Variation of SPAdes that assembles fastq files using default settings
     input:
-        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
-        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
+        i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
+        i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
     output:
         "rnaspades_assemblies/{sample}/transcripts.fasta"
     log: "logs/rnaspades.{sample}.log"
@@ -407,8 +407,8 @@ rule summarize_rnaspades:
 rule abyss_2_kmer31:
     # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
     input:
-        i1 = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
-        i2 = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES)
+        i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
+        i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
     output:
         "abyss_assemblies/{sample}/{sample}-contigs.fa"
     log: "logs/abyss.{sample}.log"
