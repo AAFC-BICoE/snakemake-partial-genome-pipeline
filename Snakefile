@@ -146,7 +146,7 @@ rule bbmerge:
         ihist = "trimmed_merged/{sample}/{sample}_ihist.txt"
     log: "logs/bbmerge.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    shell: "bbmerge.sh in={input.r1} in2={input.r2} out={output.out_merged} outu={output.out_unmerged} ihist={output.ihist} &>{log}"
+    shell: "bbmerge.sh in1={input.r1} in2={input.r2} out={output.out_merged} outu={output.out_unmerged} ihist={output.ihist} &>{log}"
 
 
 rule fastqc_trimmed:
