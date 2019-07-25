@@ -1,29 +1,40 @@
 name: trinity_assembly
 channels:
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - _libgcc_mutex=0.1
+  - boost=1.64.0
+  - boost-cpp=1.64.0
   - bowtie=1.2.2
   - bowtie2=2.3.4.3
   - bzip2=1.0.8
-  - ca-certificates=2019.5.15
+  - ca-certificates=2019.6.16
   - certifi=2019.6.16
   - collectl=4.0.4
   - curl=7.65.2
   - fastool=0.1.4
+  - icu=58.2
   - jellyfish=2.2.10
   - jemalloc=4.5.0
   - krb5=1.16.1
+  - libblas=3.8.0
+  - libcblas=3.8.0
   - libcurl=7.65.2
   - libdeflate=1.0
   - libedit=3.1.20181209
   - libffi=3.2.1
   - libgcc=7.2.0
   - libgcc-ng=9.1.0
+  - libgfortran-ng=7.3.0
+  - liblapack=3.8.0
+  - libopenblas=0.3.6
   - libssh2=1.8.2
   - libstdcxx-ng=9.1.0
   - ncurses=6.1
+  - numpy=1.16.4
+  - openblas=0.3.6
   - openjdk=8.0.152
   - openssl=1.1.1c
   - parafly=r2013_01_21
@@ -63,7 +74,7 @@ dependencies:
   - pip=19.1.1
   - python=3.6.8
   - readline=7.0
-  - salmon=0.8.1
+  - salmon=0.10.1
   - samtools=1.9
   - setuptools=41.0.1
   - slclust=02022010
@@ -71,7 +82,7 @@ dependencies:
   - tbb=2019.4
   - tk=8.6.8
   - trimmomatic=0.39
-  - trinity=2.6.6
+  - trinity=2.8.5
   - wheel=0.33.4
   - xz=5.2.4
   - zlib=1.2.11
