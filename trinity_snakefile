@@ -124,7 +124,7 @@ rule trinity:
     params: ram = RAM
     threads: 16
     shell:
-        "Trinity --seqType fq --single {input.i1},{input.i2} --max_memory {params.ram}G --CPU {threads} --min_contig_length 100 --output trinity trinity_assemblies/{wildcards.sample} &>{log}"
+        "Trinity --seqType fq --single {input.i1},{input.i2} --max_memory {params.ram}G --CPU {threads} --min_contig_length 100 --output trinity_assemblies/{wildcards.sample} &>{log}"
 
 rule rename_trinity_contigs:
     input:
