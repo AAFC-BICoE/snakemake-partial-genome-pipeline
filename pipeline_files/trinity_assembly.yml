@@ -1,4 +1,4 @@
-name: trinityenv
+name: trinity_assembly
 channels:
   - bioconda
   - defaults
