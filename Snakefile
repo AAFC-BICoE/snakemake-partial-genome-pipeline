@@ -94,8 +94,8 @@ rule all:
 
         ### Final Reports and Merging ###
         merged_uces = "merged_uces/all-taxa-incomplete-merged-renamed.fasta",
-        final_report = "summary_output.csv"
-
+        final_report = "summary_output.csv",
+        uce_summary = "summaries/merged_uce_summary.csv"
 
 ###### Fastq Processing ######
 
@@ -514,7 +514,7 @@ rule summarize_abyss:
 ############################
 
 rule combine_uces:
-    # Combines All Assemblie UCEs into merged files
+    # Combines All Assembled UCEs into merged files
     input:
         spades_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated),
         rnaspades_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated),
@@ -522,6 +522,13 @@ rule combine_uces:
     output: "merged_uces/all-taxa-incomplete-merged-renamed.fasta"
     conda: "pipeline_files/pg_assembly.yml"
     shell: "python pipeline_files/merge_uces.py -o merged_uces -s phyluce-spades/taxon-sets/all/exploded-fastas/ -r phyluce-rnaspades/taxon-sets/all/exploded-fastas/ -a phyluce-abyss/taxon-sets/all/exploded-fastas/"
+
+rule uce_merged_summaries:
+    # Counts the merged uce fastas files
+    input: merged_fastas = expand("merged_uces/{sample}_merged.fasta", sample=SAMPLES_hyphenated)
+    output: "summaries/merged_uce_summary.csv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "python pipeline_files/count_uces.py -o summaries -i merged_uces"
 
 rule merge_reports:
     input: s1="summaries/abyss_uce_summary.csv", s2="summaries/rnaspades_uce_summary.csv", s3="summaries/spades_uce_summary.csv"
