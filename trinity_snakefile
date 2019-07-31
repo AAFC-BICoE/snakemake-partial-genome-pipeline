@@ -45,7 +45,7 @@ rule all:
         ihist = expand("trimmed_merged/{sample}/{sample}_ihist.txt", sample=SAMPLES),
 
         ### Trinity ###
-        trinity_assemblies = expand("trinity/{sample}/Trinity.fasta", sample=SAMPLES),
+        trinity_assemblies = expand("trinity_assemblies/trinity_{sample}/Trinity.fasta", sample=SAMPLES),
         phyluce_trinity_assemblies = expand("phyluce-trinity/assemblies/{sample}_T.fasta", sample=SAMPLES),
         trinity_assembly_metrics = "metrics/trinity_assembly_metrics.tsv",
         trinity_taxon = "phyluce-trinity/taxon.conf",
@@ -118,19 +118,19 @@ rule trinity:
         i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
         i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
     output:
-        "trinity/{sample}/Trinity.fasta"
+        "trinity_assemblies/trinity_{sample}/Trinity.fasta"
     log: "logs/trinity.{sample}.log"
     conda: "pipeline_files/trinity_assembly.yml"
     params: ram = RAM
     threads: 16
     shell:
-        "Trinity --seqType fq --single {input.i1},{input.i2} --max_memory {params.ram}G --CPU {threads} --min_contig_length 100 --output trinity/{wildcards.sample} &>{log}"
+        "Trinity --seqType fq --single {input.i1},{input.i2} --max_memory {params.ram}G --CPU {threads} --min_contig_length 100 --output trinity_assemblies/trinity_{wildcards.sample} &>{log}"
 
 rule rename_trinity_contigs:
     input:
-        "trinity/{sample}/Trinity.fasta"
+        "trinity_assemblies/trinity_{sample}/Trinity.fasta"
     output:
-        "trinity/{sample}/{sample}_trinity.fasta"
+        "trinity_assemblies/trinity_{sample}/{sample}_trinity.fasta"
     conda: "pipeline_files/pg_assembly.yml"
     shell:
         "python pipeline_files/rename_trinity_contigs.py {input} {output}"
@@ -138,7 +138,7 @@ rule rename_trinity_contigs:
 rule gather_assemblies:
     # Rename all trinity assemblies and copy to a folder for further analysis
     input:
-        assembly = "trinity/{sample}/{sample}_trinity.fasta"
+        assembly = "trinity_assemblies/trinity_{sample}/{sample}_trinity.fasta"
     output:
         renamed_assembly = "phyluce-trinity/assemblies/{sample}_T.fasta"
     run:
