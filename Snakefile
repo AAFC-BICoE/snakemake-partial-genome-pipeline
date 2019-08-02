@@ -94,6 +94,7 @@ rule all:
 
         ### Final Reports and Merging ###
         merged_uces = "merged_uces/all-taxa-incomplete-merged-renamed.fasta",
+        merged_fastas = expand("merged_uces/{sample}_merged.fasta", sample=SAMPLES_hyphenated),
         final_report = "summary_output.csv",
         uce_summary = "summaries/merged_uce_summary.csv"
 
@@ -519,7 +520,9 @@ rule combine_uces:
         spades_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated),
         rnaspades_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated),
         abyss_fastas = expand("phyluce-abyss/taxon-sets/all/exploded-fastas/{sample}-A.unaligned.fasta", sample=SAMPLES_hyphenated)
-    output: "merged_uces/all-taxa-incomplete-merged-renamed.fasta"
+    output:
+        out_total = "merged_uces/all-taxa-incomplete-merged-renamed.fasta",
+        merged_fastas = expand("merged_uces/{sample}_merged.fasta", sample=SAMPLES_hyphenated)
     conda: "pipeline_files/pg_assembly.yml"
     shell: "python pipeline_files/merge_uces.py -o merged_uces -s phyluce-spades/taxon-sets/all/exploded-fastas/ -r phyluce-rnaspades/taxon-sets/all/exploded-fastas/ -a phyluce-abyss/taxon-sets/all/exploded-fastas/"
 
