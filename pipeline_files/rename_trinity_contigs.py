@@ -26,7 +26,7 @@ def rename_contigs(input, output):
         count = 0
         for seq in SeqIO.parse(f, 'fasta'):
             seq.name = ""
-            m = re.search('len=(\d+)', seq.id, re.IGNORECASE)
+            m = re.search(r"len=(\d+)", str(seq.description))
             length = m.group(1)
             #split = seq.description.split(" ")
             #>TRINITY_DN28260_c0_g1_i1 len = 120 path = [0:0 - 119]
