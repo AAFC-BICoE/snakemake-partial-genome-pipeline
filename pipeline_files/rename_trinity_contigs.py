@@ -7,6 +7,7 @@ from Bio import SeqIO
 import os
 import glob
 import argparse
+import re
 
 def main():
     parser = argparse.ArgumentParser(description='Renames Abyss contigs to more closely match SPAdes')
@@ -25,9 +26,11 @@ def rename_contigs(input, output):
         count = 0
         for seq in SeqIO.parse(f, 'fasta'):
             seq.name = ""
-            split = seq.description.split(" ")
+            m = re.search('len=(\d+)', seq.id, re.IGNORECASE)
+            length = m.group(1)
+            #split = seq.description.split(" ")
             #>TRINITY_DN28260_c0_g1_i1 len = 120 path = [0:0 - 119]
-            header = "NODE_{}_length_{}_cov_{}".format(count,split[3],0)
+            header = "NODE_{}_length_{}_cov_{}".format(count,length,0)
             seq.id = header
             seq.description = ""
             seqs.append(seq)
