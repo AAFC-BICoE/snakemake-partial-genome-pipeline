@@ -34,15 +34,17 @@ adaptors = "pipeline_files/adapters.fa"
 
 rule all:
     input:
-        ### Fastq Processing ###
+        ### Read Adapter Trimming ###
         fastq_metrics = "metrics/fastq_metrics.tsv",
         r1_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
         r2_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES),
 
+        ### Read Merging ###
         fastq_merged = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
         fastq_unmerged = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES),
         ihist = expand("trimmed_merged/{sample}/{sample}_ihist.txt", sample=SAMPLES),
 
+        ### FastQC ###
         fastq_output_r1 = expand("fastqc/{sample}_L001_R1_001_fastqc.html", sample=SAMPLES),
         fastq_output_r2 = expand("fastqc/{sample}_L001_R2_001_fastqc.html", sample=SAMPLES),
         fastq_trimmed_r1 = expand("fastqc_trimmed/{sample}_merged_fastqc.html", sample=SAMPLES),
@@ -109,7 +111,6 @@ rule fastq_quality_metrics:
     conda: "pipeline_files/pg_assembly.yml"
     shell: "statswrapper.sh {input.r1} {input.r2} > {output}"
 
-
 rule fastqc:
     # Quality Control check on raw data before adaptor trimming
     input:
@@ -122,7 +123,6 @@ rule fastqc:
     conda: "pipeline_files/pg_assembly.yml"
     shell:
         "fastqc -o fastqc {input.r1} {input.r2}"
-
 
 rule bbduk:
     # Sequencing Adaptor trimming, quality trimming
@@ -149,7 +149,6 @@ rule bbmerge:
     conda: "pipeline_files/pg_assembly.yml"
     shell: "bbmerge.sh in1={input.r1} in2={input.r2} out={output.out_merged} outu={output.out_unmerged} ihist={output.ihist} &>{log}"
 
-
 rule fastqc_trimmed:
     # Quality Control check after adaptor trimming
     input:
@@ -162,7 +161,6 @@ rule fastqc_trimmed:
     conda: "pipeline_files/pg_assembly.yml"
     shell:
         "fastqc -o fastqc_trimmed {input.i1} {input.i2} &>{log}"
-
 
 rule multiqc:
     # Consolidates all QC files into single report pre/post trimming
@@ -184,15 +182,15 @@ rule multiqc:
 rule spades:
     # Assembles fastq files using default settings
     input:
-        i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
-        i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
+        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
     output:
         "spades_assemblies/{sample}/contigs.fasta"
     log: "logs/spades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
     threads: 16
     shell:
-        "spades.py -t {threads} --merged {input.i1} -s {input.i2} -o spades_assemblies/{wildcards.sample} &>{log}"
+        "spades.py -t {threads} -1 {input.r1} -2 {input.r2} -o spades_assemblies/{wildcards.sample} &>{log}"
 
 
 rule gather_assemblies:
@@ -284,15 +282,15 @@ rule summarize_spades:
 rule rnaspades:
     # Variation of SPAdes that assembles fastq files using default settings
     input:
-        i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
-        i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
+        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
     output:
         "rnaspades_assemblies/{sample}/transcripts.fasta"
     log: "logs/rnaspades.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
     threads: 16
     shell:
-        "rnaspades.py -t {threads} --merged {input.i1} -s {input.i2} -o rnaspades_assemblies/{wildcards.sample} &>{log}"
+        "rnaspades.py -t {threads} -1 {input.r1} -2 {input.r2} -o rnaspades_assemblies/{wildcards.sample} &>{log}"
 
 rule gather_rna_assemblies:
     # Rename all rnaspades assemblies and copy to a folder for further analysis
@@ -375,9 +373,8 @@ rule summarize_rnaspades:
 ###### End of rnaSPAdes    ######
 #################################
 
-##############################
-###### Start of Abyss 2 ######
-
+#################################
+### Start of Phyluce/Abyss 1.5 ##
 #Older methods used with Phyluce assembly_assemblo_abyss
 #rule generate_assembly_conf:
 #    # List of assembly names required for Phyluce Abyss processing
@@ -405,6 +402,20 @@ rule summarize_rnaspades:
 #        "find abyss_assemblies -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 rm -R; phyluce_assembly_assemblo_abyss --conf abyss_assemblies/assembly.conf --output abyss_assemblies --clean --cores {threads} &>{log}"
 
 
+#rule gather_abyss_assemblies:
+#    # Rename all spades assemblies and copy to a folder for further analysis
+#    input:
+#        assembly = "abyss_assemblies/contigs/{sample}.contigs.fasta"
+#    output:
+#        renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
+#    run:
+#        copyfile(input.assembly,output.renamed_assembly)
+
+### End of Phyluce/Abyss 1.5 ####
+#################################
+
+##############################
+###### Start of Abyss 2 ######
 rule abyss_2_kmer31:
     # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
     input:
@@ -436,16 +447,6 @@ rule gather_abyss_assemblies:
         renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
     shell:
         "sed -e '/^[^>]/s/[^ATGCatgc]/N/g' {input.assembly} >> {output.renamed_assembly}"
-
-
-#rule gather_abyss_assemblies:
-#    # Rename all spades assemblies and copy to a folder for further analysis
-#    input:
-#        assembly = "abyss_assemblies/contigs/{sample}.contigs.fasta"
-#    output:
-#        renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
-#    run:
-#        copyfile(input.assembly,output.renamed_assembly)
 
 rule abyss_quality_metrics:
     # BBMap's Stats.sh assembly metrics for spades assemblies
