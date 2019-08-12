@@ -8,7 +8,6 @@ Heavily follows the Phyluce methodology outlined in
 2) Assembles trimmed reads [Abyss](http://www.bcgsc.ca/platform/bioinfo/software/abyss), [SPAdes, rnaSPAdes](http://cab.spbu.ru/software/spades/)
 3) Detects and extracts target contigs [Phyluce](https://phyluce.readthedocs.io/en/latest/index.html) 
 4) Summary statistics on targets and assemblies [BBTools Stats](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/statistics-guide/)
-5) Optional Script to proceed with Phylogeny
 
 ### Prerequisites
 
@@ -26,7 +25,6 @@ conda install -c bioconda -c conda-forge snakemake
 ## Getting Started
 
 Within a working directory:
-
 ```
 git clone https://github.com/AAFC-BICoE/snakemake-partial-genome-pipeline.git .
 ```
@@ -51,7 +49,12 @@ To run pipeline with 32 cores and continue if some samples fail:
 ```
 snakemake --use-conda -k --cores 32 
 ```
-
+To save time on future runs, a central folder of conda enviroments can be called so they don't need to be repeatedly rebuilt.
+```
+snakemake --use-conda --conda-prefix ~/sm_envs --cores 32
+```
+## Pipeline Overview
+![Alt text](pipeline_files/Workflow.jpg?raw=true "Title")
 ## Copyright
 Government of Canada, Agriculture & Agri-Food Canada
 
