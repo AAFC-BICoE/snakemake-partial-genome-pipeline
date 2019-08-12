@@ -425,9 +425,9 @@ rule abyss_2_kmer31:
         "abyss_assemblies/{sample}/{sample}-contigs.fa"
     log: "logs/abyss.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
-    threads: 32
+    threads: 4
     shell:
-        "abyss-pe j={threads} --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in=../../{input.i2} se=../../{input.i1} &>{log}"
+        "abyss-pe --directory=abyss_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in=../../{input.i2} se=../../{input.i1} &>{log}"
 
 rule rename_abyss_contigs:
     input:
