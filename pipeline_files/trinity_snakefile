@@ -1,0 +1,221 @@
+# Snakemake file to process partial genome sequences generated from UCE target enrichment experiments
+# Author: Jackson Eyres jackson.eyres@agr.gc.ca
+# Copyright: Government of Canada
+# License: MIT
+# Version 0.4
+
+import glob
+import os
+from shutil import copyfile
+
+# Configuration Settings
+THREADS = 16
+RAM = 500
+# Location of fastq folder, default "fastq". Phyluce requires files to not mix "-" and "_", so fastq files renamed
+for f in glob.glob('fastq/*.fastq.gz'):
+    basename = os.path.basename(f)
+    new_basename = ""
+
+    new_basename = basename.replace("-","_")
+    if new_basename[0].isdigit(): # Phyluce doesn't work with samples starting with digits
+        new_basename = "Sample_" + new_basename
+    new_path = f.replace(basename, new_basename)
+    os.rename(f, new_path)
+
+# Need sample name without the Illumina added information to the fastq files
+SAMPLES = set([os.path.basename(f).replace("_L001_R1_001.fastq.gz","").replace("_L001_R2_001.fastq.gz","") for f in glob.glob('fastq/*.fastq.gz')])
+SAMPLES_hyphenated = []
+for sample in SAMPLES:
+    SAMPLES_hyphenated.append(sample.replace("_", "-"))
+print(SAMPLES_hyphenated)
+
+# Location of adaptor.fa for trimming
+adaptors = "pipeline_files/adapters.fa"
+
+
+rule all:
+    input:
+        ### Fastq Processing ###
+        fastq_metrics = "metrics/fastq_metrics.tsv",
+        r1_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
+        r2_trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz", sample=SAMPLES),
+
+        fastq_merged = expand("trimmed_merged/{sample}/{sample}_merged.fq", sample=SAMPLES),
+        fastq_unmerged = expand("trimmed_merged/{sample}/{sample}_unmerged.fq", sample=SAMPLES),
+        ihist = expand("trimmed_merged/{sample}/{sample}_ihist.txt", sample=SAMPLES),
+
+        ### Trinity ###
+        trinity_assemblies = expand("trinity_assemblies/trinity_{sample}/Trinity.fasta", sample=SAMPLES),
+        phyluce_trinity_assemblies = expand("phyluce-trinity/assemblies/{sample}_T.fasta", sample=SAMPLES),
+        trinity_assembly_metrics = "metrics/trinity_assembly_metrics.tsv",
+        trinity_taxon = "phyluce-trinity/taxon.conf",
+        trinity_db = "phyluce-trinity/uce-search-results/probe.matches.sqlite",
+        trinity_log = "phyluce-trinity/phyluce_assembly_match_contigs_to_probes.log",
+        trinity_taxon_sets = "phyluce-trinity/taxon-sets/all/all-taxa-incomplete.conf",
+        trinity_all_taxa = "phyluce-trinity/taxon-sets/all/all-taxa-incomplete.fasta",
+        trinity_exploded_fastas = expand("phyluce-trinity/taxon-sets/all/exploded-fastas/{sample}-T.unaligned.fasta", sample=SAMPLES_hyphenated),
+        phyluce_trinity_uce_metrics = "metrics/phyluce_trinity_uce_metrics.tsv",
+        trinity_uce_summary = "summaries/trinity_uce_summary.csv",
+
+
+###### Fastq Processing ######
+
+rule fastq_quality_metrics:
+    # BBMap's Stats.sh assembly metrics for fastq files
+    input:
+        r1 = expand('fastq/{sample}_L001_R1_001.fastq.gz', sample=SAMPLES),
+        r2 = expand('fastq/{sample}_L001_R2_001.fastq.gz', sample=SAMPLES)
+    output: "metrics/fastq_metrics.tsv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "statswrapper.sh {input.r1} {input.r2} > {output}"
+
+
+rule fastqc:
+    # Quality Control check on raw data before adaptor trimming
+    input:
+        r1 = expand('fastq/{sample}_L001_R1_001.fastq.gz', sample=SAMPLES),
+        r2 = expand('fastq/{sample}_L001_R2_001.fastq.gz', sample=SAMPLES)
+    output:
+        o1 = expand("fastqc/{sample}_L001_R1_001_fastqc.html", sample=SAMPLES),
+        o2 = expand("fastqc/{sample}_L001_R2_001_fastqc.html", sample=SAMPLES)
+    log: "logs/fastqc.log"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell:
+        "fastqc -o fastqc {input.r1} {input.r2}"
+
+
+rule bbduk:
+    # Sequencing Adaptor trimming, quality trimming
+    input:
+        r1 = 'fastq/{sample}_L001_R1_001.fastq.gz',
+        r2 = 'fastq/{sample}_L001_R2_001.fastq.gz'
+    output:
+        out1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        out2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz",
+    log: "logs/bbduk.{sample}.log"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "bbduk.sh in1={input.r1} out1={output.out1} in2={input.r2} out2={output.out2} ref={adaptors} ktrim=r k=23 mink=11 hdist=1 tpe tbo &>{log}; touch {output.out1} {output.out2}"
+
+rule bbmerge:
+    # Merges paired end reads together
+    input:
+        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+    output:
+        out_merged = "trimmed_merged/{sample}/{sample}_merged.fq",
+        out_unmerged = "trimmed_merged/{sample}/{sample}_unmerged.fq",
+        ihist = "trimmed_merged/{sample}/{sample}_ihist.txt"
+    log: "logs/bbmerge.{sample}.log"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "bbmerge.sh in1={input.r1} in2={input.r2} out={output.out_merged} outu={output.out_unmerged} ihist={output.ihist} &>{log}"
+
+
+##############################
+###### Start of Trinity  ######
+rule trinity:
+    # Assembles fastq files using default settings
+    input:
+        i1 = "trimmed_merged/{sample}/{sample}_merged.fq",
+        i2 = "trimmed_merged/{sample}/{sample}_unmerged.fq"
+    output:
+        "trinity_assemblies/trinity_{sample}/Trinity.fasta"
+    log: "logs/trinity.{sample}.log"
+    conda: "pipeline_files/trinity_assembly.yml"
+    params: ram = RAM
+    threads: 16
+    shell:
+        "Trinity --seqType fq --single {input.i1},{input.i2} --max_memory {params.ram}G --CPU {threads} --min_contig_length 100 --output trinity_assemblies/trinity_{wildcards.sample} &>{log}"
+
+rule rename_trinity_contigs:
+    input:
+        "trinity_assemblies/trinity_{sample}/Trinity.fasta"
+    output:
+        "trinity_assemblies/trinity_{sample}/{sample}_trinity.fasta"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell:
+        "python pipeline_files/rename_trinity_contigs.py {input} {output}"
+
+rule gather_assemblies:
+    # Rename all trinity assemblies and copy to a folder for further analysis
+    input:
+        assembly = "trinity_assemblies/trinity_{sample}/{sample}_trinity.fasta"
+    output:
+        renamed_assembly = "phyluce-trinity/assemblies/{sample}_T.fasta"
+    run:
+        if os.path.exists(input.assembly):
+            if os.path.exists("phyluce-trinity/assemblies"):
+                pass
+            else:
+                os.path.mkdir("phyluce-trinity/assemblies")
+            copyfile(input.assembly,output.renamed_assembly)
+
+rule generate_trinity_taxons_conf:
+    # List of assembly names required for Phyluce processing
+    output: w1="phyluce-trinity/taxon.conf"
+    run:
+        with open (output.w1, "w") as f:
+            f.write("[all]\n")
+            for item in SAMPLES:
+                f.write(item + "_T\n")
+
+rule trinity_quality_metrics:
+    # BBMap's Stats.sh assembly metrics for trinity assemblies
+    input: "phyluce-trinity/taxon.conf"
+    output: "metrics/trinity_assembly_metrics.tsv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "statswrapper.sh phyluce-trinity/assemblies/*.fasta > {output}"
+
+# The following scripts are derived from https://phyluce.readthedocs.io/en/latest/tutorial-one.html
+# This tutorial outlines the key steps of following Phyluce to derive UCEs from probes and assemblies
+
+rule phyluce_trinity:
+    # Matches probes against assembled contigs
+    input:
+        taxon = "phyluce-trinity/taxon.conf",
+        assemblies = expand("phyluce-trinity/assemblies/{sample}_T.fasta", sample=SAMPLES)
+    output: db="phyluce-trinity/uce-search-results/probe.matches.sqlite", log="phyluce-trinity/phyluce_assembly_match_contigs_to_probes.log"
+    conda: "pipeline_files/phyenv.yml"
+    #Must remove the auto generated output directory before running script
+    shell: "rm -r phyluce-trinity/uce-search-results; cd phyluce-trinity; phyluce_assembly_match_contigs_to_probes --keep-duplicates KEEP_DUPLICATES --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
+
+rule phyluce_assembly_get_match_counts_trinity:
+    # Filters matches to a 1 to 1 relationship
+    input: conf="phyluce-trinity/taxon.conf", db="phyluce-trinity/uce-search-results/probe.matches.sqlite"
+    output: "phyluce-trinity/taxon-sets/all/all-taxa-incomplete.conf"
+    conda: "pipeline_files/phyenv.yml"
+    shell: "cd phyluce-trinity; phyluce_assembly_get_match_counts --locus-db uce-search-results/probe.matches.sqlite --taxon-list-config taxon.conf --taxon-group 'all' --incomplete-matrix --output taxon-sets/all/all-taxa-incomplete.conf"
+
+rule phyluce_assembly_get_fastas_from_match_counts_trinity:
+    # Generates the monolithic fasta file suitable for further mafft alignment using Phyluce
+    input:
+      db = "phyluce-trinity/uce-search-results/probe.matches.sqlite",
+      conf = "phyluce-trinity/taxon-sets/all/all-taxa-incomplete.conf"
+    output: "phyluce-trinity/taxon-sets/all/all-taxa-incomplete.fasta"
+    conda: "pipeline_files/phyenv.yml"
+    shell: "cd phyluce-trinity/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
+
+rule phyluce_assembly_explode_get_fastas_file_trinity:
+    # Optional step to seperate out all matches on a per specimen level
+    input: alignments="phyluce-trinity/taxon-sets/all/all-taxa-incomplete.fasta"
+    output:
+        exploded_fastas = expand("phyluce-trinity/taxon-sets/all/exploded-fastas/{sample}-T.unaligned.fasta", sample=SAMPLES_hyphenated)
+    conda: "pipeline_files/phyenv.yml"
+    # Command requires --input and not --alignments
+    shell: "cd phyluce-trinity/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
+
+rule phyluce_trinity_quality_metrics:
+    # BBMap's Stats.sh assembly metrics for trinity assemblies
+    input: expand("phyluce-trinity/taxon-sets/all/exploded-fastas/{sample}-T.unaligned.fasta", sample=SAMPLES_hyphenated)
+    output: "metrics/phyluce_trinity_uce_metrics.tsv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "statswrapper.sh {input} > {output}"
+
+rule summarize_trinity:
+    # Creates a summary file for evaulating success and failures per specimen
+    input: r1="phyluce-trinity/phyluce_assembly_match_contigs_to_probes.log", f1="metrics/fastq_metrics.tsv"
+    output: r2="summaries/trinity_uce_summary.csv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "python pipeline_files/evaluate.py -i {input.r1} -f {input.f1} -o {output.r2}"
+
+###### End of Trinity    ######
+##############################
