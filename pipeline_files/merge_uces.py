@@ -22,13 +22,15 @@ def main():
                         help='rnaSPAdes exploded-fastas folder', required=True)
     parser.add_argument('-a', type=str,
                         help='Abyss exploded-fastas folder', required=True)
+    parser.add_argument('-u', type=str,
+                        help='Abyss Unmerged exploded-fastas folder', required=True)
     args = parser.parse_args()
     print("Merging SPAdes and rnaSPAdes UCEs together into {} directory".format(args.o))
 
-    combine_uces(args.o, args.s, args.r, args.a)
+    combine_uces(args.o, args.s, args.r, args.a, args.u)
 
 
-def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_directory):
+def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_directory, abyss_u_directory):
     """
     Takes the UCES from various assembly runs and creates a seperate file taking only the best sequence per UCE
     :return:
@@ -45,7 +47,7 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
     spades_fastas = glob.glob(os.path.join(spades_directory, "*.fasta"))
     rnaspades_fastas = glob.glob(os.path.join(rnaspades_directory, "*.fasta"))
     abyss_fastas = glob.glob(os.path.join(abyss_directory, "*.fasta"))
-
+    abyss_u_fastas = glob.glob(os.path.join(abyss_u_directory, "*.fasta"))
     # Put all the contigs into a single dictionary
     specimen_dict = {}
     for fasta in spades_fastas:
@@ -62,6 +64,12 @@ def combine_uces(output_directory, spades_directory, rnaspades_directory, abyss_
     for fasta in abyss_fastas:
         specimen = os.path.basename(fasta)
         specimen_name = specimen.replace("-A.unaligned.fasta", "")
+        if specimen_name in specimen_dict:
+            specimen_dict[specimen_name].append(fasta)
+
+    for fasta in abyss_u_fastas:
+        specimen = os.path.basename(fasta)
+        specimen_name = specimen.replace("-AU.unaligned.fasta", "")
         if specimen_name in specimen_dict:
             specimen_dict[specimen_name].append(fasta)
 

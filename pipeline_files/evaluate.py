@@ -58,7 +58,7 @@ def summarize_uces(input_path, fastq_metrics, output_path):
                 sliced = line[76:]
                 split = sliced.split(" ")
                 species = split[0].replace(":", "")
-                species_name = split[0].replace("_A:", "").replace("_S:", "").replace("_R:", "")
+                species_name = split[0].replace("_A:", "").replace("_S:", "").replace("_R:", "").replace("_AU:", "")
                 read_count = 0
                 if species_name in reads:
                     read_count = reads[species_name]
