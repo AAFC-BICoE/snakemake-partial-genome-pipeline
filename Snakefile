@@ -80,7 +80,7 @@ rule all:
         phyluce_rnaspades_uce_metrics = "metrics/phyluce_rnaspades_uce_metrics.tsv",
         rnaspades_uce_summary = "summaries/rnaspades_uce_summary.csv",
 
-        ### Abyss 2 ####
+        ### Abyss 2 Merged ####
         abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}-contigs.fa", sample=SAMPLES),
         renamed_abyss_assemblies = expand("abyss_assemblies/{sample}/{sample}_abyss.fasta", sample=SAMPLES),
         moved_assemblies = expand("phyluce-abyss/assemblies/{sample}_A.fasta", sample=SAMPLES),
@@ -93,6 +93,21 @@ rule all:
         abyss_exploded_fastas = expand("phyluce-abyss/taxon-sets/all/exploded-fastas/{sample}-A.unaligned.fasta", sample=SAMPLES_hyphenated),
         phyluce_abyss_uce_metrics = "metrics/phyluce_abyss_uce_metrics.tsv",
         abyss_use_summary = "summaries/abyss_uce_summary.csv",
+
+      ### Abyss 2 Unmerged ####
+        abyss_u_assemblies = expand("abyss_u_assemblies/{sample}/{sample}-contigs.fa", sample=SAMPLES),
+        renamed_abyss_u_assemblies = expand("abyss_u_assemblies/{sample}/{sample}_abyss.fasta", sample=SAMPLES),
+        moved_assemblies_u = expand("phyluce-abyss_u/assemblies/{sample}_AU.fasta", sample=SAMPLES),
+        abyss_u_assembly_metrics = "metrics/abyss_u_assembly_metrics.tsv",
+        abyss_u_taxon_conf = "phyluce-abyss_u/taxon.conf",
+        abyss_u_db = "phyluce-abyss_u/uce-search-results/probe.matches.sqlite",
+        abyss_u_log = "phyluce-abyss_u/phyluce_assembly_match_contigs_to_probes.log",
+        abyss_u_taxon_sets = "phyluce-abyss_u/taxon-sets/all/all-taxa-incomplete.conf",
+        abyss_u_all_taxa = "phyluce-abyss_u/taxon-sets/all/all-taxa-incomplete.fasta",
+        abyss_u_exploded_fastas = expand("phyluce-abyss_u/taxon-sets/all/exploded-fastas/{sample}-AU.unaligned.fasta", sample=SAMPLES_hyphenated),
+        phyluce_abyss_u_uce_metrics = "metrics/phyluce_abyss_u_uce_metrics.tsv",
+        abyss_u_use_summary = "summaries/abyss_u_uce_summary.csv",
+
 
         ### Final Reports and Merging ###
         merged_uces = "merged_uces/all-taxa-incomplete-merged-renamed.fasta",
@@ -415,7 +430,7 @@ rule summarize_rnaspades:
 #################################
 
 ##############################
-###### Start of Abyss 2 ######
+###### Start of Abyss 2 Merged ######
 rule abyss_2_kmer31:
     # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
     input:
@@ -512,6 +527,104 @@ rule summarize_abyss:
 ###### End of Abyss 2 ######
 ############################
 
+##############################
+###### Start of Abyss 2 Unmerged ######
+rule abyss_u_2_kmer31:
+    # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
+    input:
+        r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
+        r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
+    output:
+        "abyss_u_assemblies/{sample}/{sample}-contigs.fa"
+    log: "logs/abyss_u.{sample}.log"
+    conda: "pipeline_files/pg_assembly.yml"
+    threads: 4
+    shell:
+        "abyss-pe --directory=abyss_u_assemblies/{wildcards.sample} name={wildcards.sample} k=31 in='../../{input.r1} ../../{input.r2}' &>{log}"
+
+rule rename_abyss_u_contigs:
+    input:
+        "abyss_u_assemblies/{sample}/{sample}-contigs.fa"
+    output:
+        "abyss_u_assemblies/{sample}/{sample}_abyss.fasta"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell:
+        "python pipeline_files/rename_abyss_contigs.py {input} {output}"
+
+rule gather_abyss_u_assemblies:
+    # Rename all spades assemblies and copy to a folder for further analysis.
+    # Abyss adds non ATGC symbols which must be removed, currently with sed
+    input:
+        assembly = "abyss_u_assemblies/{sample}/{sample}_abyss.fasta"
+    output:
+        renamed_assembly = "phyluce-abyss_u/assemblies/{sample}_AU.fasta"
+    shell:
+        "sed -e '/^[^>]/s/[^ATGCatgc]/N/g' {input.assembly} >> {output.renamed_assembly}"
+
+rule abyss_u_quality_metrics:
+    # BBMap's Stats.sh assembly metrics for spades assemblies
+    input: expand("phyluce-abyss_u/assemblies/{sample}_AU.fasta", sample=SAMPLES)
+    output: "metrics/abyss_u_assembly_metrics.tsv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "statswrapper.sh {input} > {output}"
+
+rule generate_taxons_conf_abyss_u:
+    # List of assembly names required for Phyluce processing
+    output: w1="phyluce-abyss_u/taxon.conf"
+    run:
+        with open (output.w1, "w") as f:
+            f.write("[all]\n")
+            for item in SAMPLES:
+                f.write(item + "_AU\n")
+
+rule phyluce_abyss_u:
+    input:
+        taxon = "phyluce-abyss_u/taxon.conf",
+        assemblies = expand("phyluce-abyss_u/assemblies/{sample}_AU.fasta", sample=SAMPLES)
+    output: db="phyluce-abyss_u/uce-search-results/probe.matches.sqlite", log="phyluce-abyss_u/phyluce_assembly_match_contigs_to_probes.log"
+    conda: "pipeline_files/phyenv.yml"
+    # Must remove the auto generated output directory before running script
+    shell: "rm -r phyluce-abyss_u/uce-search-results; cd phyluce-abyss_u; phyluce_assembly_match_contigs_to_probes --keep-duplicates KEEP_DUPLICATES --contigs assemblies --output uce-search-results --probes ../probes/*.fasta"
+
+rule phyluce_assembly_get_match_counts_abyss_u:
+    input: conf="phyluce-abyss_u/taxon.conf", db="phyluce-abyss_u/uce-search-results/probe.matches.sqlite"
+    output: "phyluce-abyss_u/taxon-sets/all/all-taxa-incomplete.conf"
+    conda: "pipeline_files/phyenv.yml"
+    shell: "cd phyluce-abyss_u; phyluce_assembly_get_match_counts --locus-db uce-search-results/probe.matches.sqlite --taxon-list-config taxon.conf --taxon-group 'all' --incomplete-matrix --output taxon-sets/all/all-taxa-incomplete.conf"
+
+rule phyluce_assembly_get_fastas_from_match_counts_abyss_u:
+    input:
+      db = "phyluce-abyss_u/uce-search-results/probe.matches.sqlite",
+      conf = "phyluce-abyss_u/taxon-sets/all/all-taxa-incomplete.conf"
+    output: "phyluce-abyss_u/taxon-sets/all/all-taxa-incomplete.fasta"
+    conda: "pipeline_files/phyenv.yml"
+    shell: "cd phyluce-abyss_u/taxon-sets/all; mkdir log; phyluce_assembly_get_fastas_from_match_counts --contigs ../../assemblies --locus-db ../../uce-search-results/probe.matches.sqlite --match-count-output all-taxa-incomplete.conf --output all-taxa-incomplete.fasta --incomplete-matrix all-taxa-incomplete.incomplete --log-path log"
+
+rule phyluce_assembly_explode_get_fastas_file_abyss_u:
+    input: alignments = "phyluce-abyss_u/taxon-sets/all/all-taxa-incomplete.fasta"
+    output:
+        exploded_fastas = expand("phyluce-abyss_u/taxon-sets/all/exploded-fastas/{sample}-AU.unaligned.fasta", sample=SAMPLES_hyphenated)
+    conda: "pipeline_files/phyenv.yml"
+    # Command requires --input and not --alignments
+    # Must remove the auto generated output directory before running script
+    shell: "cd phyluce-abyss_u/taxon-sets/all; rm -r exploded-fastas; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-fastas --by-taxon; phyluce_assembly_explode_get_fastas_file --input all-taxa-incomplete.fasta --output exploded-locus; cd ../../../; touch {output.exploded_fastas}"
+
+rule phyluce_abyss_u_quality_metrics:
+# BBMap's Stats.sh assembly metrics for rnaspades assemblies
+    input: expand("phyluce-abyss_u/taxon-sets/all/exploded-fastas/{sample}-AU.unaligned.fasta", sample=SAMPLES_hyphenated)
+    output: "metrics/phyluce_abyss_u_uce_metrics.tsv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "statswrapper.sh {input} > {output}"
+
+rule summarize_abyss_u:
+    input: r1="phyluce-abyss_u/phyluce_assembly_match_contigs_to_probes.log", f1="metrics/fastq_metrics.tsv"
+    output: r2="summaries/abyss_u_uce_summary.csv"
+    conda: "pipeline_files/pg_assembly.yml"
+    shell: "python pipeline_files/evaluate.py -i {input.r1} -f {input.f1} -o {output.r2}"
+
+###### End of Abyss 2 ######
+############################
+
 ###### Summary Reporting ###
 ############################
 
@@ -520,12 +633,13 @@ rule combine_uces:
     input:
         spades_fastas = expand("phyluce-spades/taxon-sets/all/exploded-fastas/{sample}-S.unaligned.fasta", sample=SAMPLES_hyphenated),
         rnaspades_fastas = expand("phyluce-rnaspades/taxon-sets/all/exploded-fastas/{sample}-R.unaligned.fasta", sample=SAMPLES_hyphenated),
-        abyss_fastas = expand("phyluce-abyss/taxon-sets/all/exploded-fastas/{sample}-A.unaligned.fasta", sample=SAMPLES_hyphenated)
+        abyss_fastas = expand("phyluce-abyss/taxon-sets/all/exploded-fastas/{sample}-A.unaligned.fasta", sample=SAMPLES_hyphenated),
+        abyss_u_fastas = expand("phyluce-abyss_u/taxon-sets/all/exploded-fastas/{sample}-AU.unaligned.fasta", sample=SAMPLES_hyphenated)
     output:
         out_total = "merged_uces/all-taxa-incomplete-merged-renamed.fasta",
         merged_fastas = expand("merged_uces/{sample}_merged.fasta", sample=SAMPLES_hyphenated)
     conda: "pipeline_files/pg_assembly.yml"
-    shell: "python pipeline_files/merge_uces.py -o merged_uces -s phyluce-spades/taxon-sets/all/exploded-fastas/ -r phyluce-rnaspades/taxon-sets/all/exploded-fastas/ -a phyluce-abyss/taxon-sets/all/exploded-fastas/"
+    shell: "python pipeline_files/merge_uces.py -o merged_uces -s phyluce-spades/taxon-sets/all/exploded-fastas/ -r phyluce-rnaspades/taxon-sets/all/exploded-fastas/ -a phyluce-abyss/taxon-sets/all/exploded-fastas/ -u phyluce-abyss_u/taxon-sets/all/exploded-fastas/"
 
 rule uce_merged_summaries:
     # Counts the merged uce fastas files
@@ -535,7 +649,7 @@ rule uce_merged_summaries:
     shell: "python pipeline_files/count_uces.py -o summaries -i merged_uces"
 
 rule merge_reports:
-    input: s1="summaries/abyss_uce_summary.csv", s2="summaries/rnaspades_uce_summary.csv", s3="summaries/spades_uce_summary.csv"
+    input: s1="summaries/abyss_uce_summary.csv", s2="summaries/abyss_u_uce_summary.csv", s3="summaries/rnaspades_uce_summary.csv", s4="summaries/spades_uce_summary.csv"
     output: "summary_output.csv"
     conda: "pipeline_files/pg_assembly.yml"
     shell: "cat {input} >> {output}"
