@@ -38,14 +38,15 @@ def count_uces(output_directory, input_directory):
             rnaspades_count = 0
             abyss_u_count = 0
             for seq in SeqIO.parse(fasta, 'fasta'):
-                if "_A" in seq.id[-2:]:
-                    abyss_count += 1
-                if "_R" in seq.id[-2:]:
-                    rnaspades_count += 1
-                if "_S" in seq.id[-2:]:
-                    spades_count += 1
-                if "_AU" in seq.id[-2:]:
+                if "_AU" in seq.id[-3:]:
                     abyss_u_count += 1
+                elif "_A" in seq.id[-2:]:
+                    abyss_count += 1
+                elif "_R" in seq.id[-2:]:
+                    rnaspades_count += 1
+                elif "_S" in seq.id[-2:]:
+                    spades_count += 1
+
                 count += 1
         if specimen_name in specimen_dict:
             specimen_dict[specimen_name] = [count, abyss_count, abyss_u_count, spades_count, rnaspades_count]
