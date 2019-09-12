@@ -36,6 +36,7 @@ def count_uces(output_directory, input_directory):
             abyss_count = 0
             spades_count = 0
             rnaspades_count = 0
+            abyss_u_count = 0
             for seq in SeqIO.parse(fasta, 'fasta'):
                 if "_A" in seq.id[-2:]:
                     abyss_count += 1
@@ -43,17 +44,19 @@ def count_uces(output_directory, input_directory):
                     rnaspades_count += 1
                 if "_S" in seq.id[-2:]:
                     spades_count += 1
+                if "_AU" in seq.id[-2:]:
+                    abyss_u_count += 1
                 count += 1
         if specimen_name in specimen_dict:
-            specimen_dict[specimen_name] = [count, abyss_count, spades_count, rnaspades_count]
+            specimen_dict[specimen_name] = [count, abyss_count, abyss_u_count, spades_count, rnaspades_count]
         else:
-            specimen_dict[specimen_name] = [count, abyss_count, spades_count, rnaspades_count]
+            specimen_dict[specimen_name] = [count, abyss_count, abyss_u_count, spades_count, rnaspades_count]
 
     output_file = os.path.join(output_directory, "merged_uce_summary.csv")
     with open(output_file, "w") as g:
-        g.write("Specimen, Merged Targets, Abyss Contribution, SPAdes Contribution, rnaSPAdes Contribution\n")
+        g.write("Specimen, Merged Targets, Abyss Contribution, Abyss Unmerged Contribution, SPAdes Contribution, rnaSPAdes Contribution\n")
         for key, value in specimen_dict.items():
-            g.write("{},{},{},{},{}\n".format(key, value[0],value[1],value[2],value[3]))
+            g.write("{},{},{},{},{},{}\n".format(key, value[0],value[1],value[2],value[3],value[4]))
 
 
 if __name__ == "__main__":
