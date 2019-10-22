@@ -2,7 +2,7 @@
 # Author: Jackson Eyres jackson.eyres@agr.gc.ca
 # Copyright: Government of Canada
 # License: MIT
-# Version 0.4
+# Version 0.5
 
 import glob
 import os
@@ -28,7 +28,7 @@ for sample in SAMPLES:
     SAMPLES_hyphenated.append(sample.replace("_", "-"))
 print(SAMPLES_hyphenated)
 
-# Location of adaptor.fa for trimming
+# Location of adaptor.fa for trimming, provided with BBDuk, but conda installation made it difficult to find reliably
 adaptors = "pipeline_files/adapters.fa"
 
 
@@ -49,10 +49,6 @@ rule all:
         fastq_output_r2 = expand("fastqc/{sample}_L001_R2_001_fastqc.html", sample=SAMPLES),
         fastq_trimmed_r1 = expand("fastqc_trimmed/{sample}_merged_fastqc.html", sample=SAMPLES),
         fastq_trimmed_r2 = expand("fastqc_trimmed/{sample}_merged_fastqc.html", sample=SAMPLES),
-
-        # MultiQC had a habit of crashing and stopping the pipeline, temporarily removed
-#        multiqc_report = "multiqc/multiqc_report.html",
-#        multiqc_report_trimmed = "multiqc/multiqc_report_trimmed.html",
 
         ### SPAdes ###
         spades_assemblies = expand("spades_assemblies/{sample}/contigs.fasta", sample=SAMPLES),
@@ -140,7 +136,7 @@ rule fastqc:
         "fastqc -o fastqc {input.r1} {input.r2}"
 
 rule bbduk:
-    # Sequencing Adaptor trimming, quality trimming
+    # Sequencing Adaptor trimming
     input:
         r1 = 'fastq/{sample}_L001_R1_001.fastq.gz',
         r2 = 'fastq/{sample}_L001_R2_001.fastq.gz'
@@ -149,10 +145,12 @@ rule bbduk:
         out2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz",
     log: "logs/bbduk.{sample}.log"
     conda: "pipeline_files/pg_assembly.yml"
+    # For quality trimming 10, swap out shell line with the following:
+    # shell: "bbduk.sh in1={input.r1} out1={output.out1} in2={input.r2} out2={output.out2} ref={adaptors} qtrim=r trimq=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &>{log}; touch {output.out1} {output.out2}"
     shell: "bbduk.sh in1={input.r1} out1={output.out1} in2={input.r2} out2={output.out2} ref={adaptors} ktrim=r k=23 mink=11 hdist=1 tpe tbo &>{log}; touch {output.out1} {output.out2}"
 
 rule bbmerge:
-    # Merges paired end reads together
+    # Merges paired end reads together to be used with Abyss
     input:
         r1 = "trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz",
         r2 = "trimmed/{sample}/{sample}_trimmed_L001_R2_001.fastq.gz"
@@ -388,48 +386,7 @@ rule summarize_rnaspades:
 ###### End of rnaSPAdes    ######
 #################################
 
-#################################
-### Start of Phyluce/Abyss 1.5 ##
-#Older methods used with Phyluce assembly_assemblo_abyss
-#rule generate_assembly_conf:
-#    # List of assembly names required for Phyluce Abyss processing
-#    input: r1=expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES)
-#    output: w1="abyss_assemblies/assembly.conf"
-#    run:
-#        with open (output.w1, "w") as f:
-#            f.write("[samples]\n")
-#            for item in SAMPLES:
-#                relative_path = "trimmed/{}".format(item)
-#                abs_path = os.path.abspath(relative_path)
-#                f.write("{}:{}\n".format(item, abs_path))
-#
-#rule abyss:
-#        # Assembles fastq files using default settings
-#    input:
-#        trimmed = expand("trimmed/{sample}/{sample}_trimmed_L001_R1_001.fastq.gz", sample=SAMPLES),
-#        abyss_conf = "abyss_assemblies/assembly.conf",
-#    output: out = expand("abyss_assemblies/contigs/{sample}.contigs.fasta", sample=SAMPLES)
-#    #log: "logs/abyss.{sample}.log"
-#    conda: "pipeline_files/phyenv.yml"
-#    threads: 32
-#    log: "logs/phyluce_assembly_assemblo_abyss.log"
-#    shell:
-#        "find abyss_assemblies -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 rm -R; phyluce_assembly_assemblo_abyss --conf abyss_assemblies/assembly.conf --output abyss_assemblies --clean --cores {threads} &>{log}"
-
-
-#rule gather_abyss_assemblies:
-#    # Rename all spades assemblies and copy to a folder for further analysis
-#    input:
-#        assembly = "abyss_assemblies/contigs/{sample}.contigs.fasta"
-#    output:
-#        renamed_assembly = "phyluce-abyss/assemblies/{sample}_A.fasta"
-#    run:
-#        copyfile(input.assembly,output.renamed_assembly)
-
-### End of Phyluce/Abyss 1.5 ####
-#################################
-
-##############################
+#####################################
 ###### Start of Abyss 2 Merged ######
 rule abyss_2_kmer31:
     # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
@@ -527,7 +484,7 @@ rule summarize_abyss:
 ###### End of Abyss 2 ######
 ############################
 
-##############################
+#######################################
 ###### Start of Abyss 2 Unmerged ######
 rule abyss_u_2_kmer31:
     # Abyss assembler, kmer 31 is default of Phyluce_assembly_assemblo_abyss
