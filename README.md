@@ -5,18 +5,18 @@ Heavily follows the Phyluce methodology outlined in
 [Tutorial I: UCE Phylogenomics](https://phyluce.readthedocs.io/en/latest/tutorial-one.html). 
 
 1) Trims Illumina adapters and merges reads together [BBDuk, BBMerge](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/)
-2) Assembles trimmed reads [Abyss](http://www.bcgsc.ca/platform/bioinfo/software/abyss), [SPAdes, rnaSPAdes](http://cab.spbu.ru/software/spades/)
+2) Assembles trimmed and merged reads [Abyss](http://www.bcgsc.ca/platform/bioinfo/software/abyss), [SPAdes, rnaSPAdes](http://cab.spbu.ru/software/spades/)
 3) Detects and extracts target contigs [Phyluce](https://phyluce.readthedocs.io/en/latest/index.html) 
 4) Summary statistics on targets and assemblies [BBTools Stats](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/statistics-guide/)
 
 ### Prerequisites
 
-* [Conda 4.7.10](https://conda.io/docs/user-guide/install/index.html)
+* [Conda 4.7.10+](https://conda.io/docs/user-guide/install/index.html)
 ```
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 ```
-* [Snakemake 5.5.4](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
+* [Snakemake 5.5.4+](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html)
 ```
 conda install -c bioconda -c conda-forge snakemake
 ```
@@ -49,7 +49,9 @@ To run pipeline with 32 cores and continue if some samples fail:
 ```
 snakemake --use-conda -k --cores 32 
 ```
-To save time on future runs, a central folder of conda enviroments can be called so they don't need to be repeatedly rebuilt.
+To save time on future runs, a central folder of conda enviroments can be called so they don't need to be repeatedly rebuilt. 
+There is a path length limit to this feature so ensure the central folder is located in the home directory
+
 ```
 snakemake --use-conda --conda-prefix ~/sm_envs --cores 32
 ```
@@ -70,24 +72,24 @@ Bioinformatics 2009 Jun 1; 25(11) 1422-3 http://dx.doi.org/10.1093/bioinformatic
 * [Snakemake](https://snakemake.readthedocs.io/en/stable/) - Workflow management system    
 Köster, Johannes and Rahmann, Sven. “Snakemake - A scalable bioinformatics workflow engine”. Bioinformatics 2012.
 
-* SPAdes  
+* [SPAdes](http://cab.spbu.ru/software/spades/)  
 Nurk S. et al. (2013) Assembling Genomes and Mini-metagenomes from Highly Chimeric Reads. In: Deng M., Jiang R., 
 Sun F., Zhang X. (eds) Research in Computational Molecular Biology. RECOMB 2013. Lecture Notes in Computer Science, 
 vol 7821. Springer, Berlin, Heidelberg
 
-* BBTools  
+* [BBTools](https://jgi.doe.gov/data-and-tools/bbtools/)  
 Brian-JGI (2018) BBTools is a suite of fast, multithreaded bioinformatics tools designed for analysis of DNA and RNA 
-sequence data.https://jgi.doe.gov/data-and-tools/bbtools/ 
+sequence data.
 
-* FASTQC  
+* [FASTQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc)   
 Andrews S. (2018). FastQC: a quality control tool for high throughput sequence data. 
-Available online at: http://www.bioinformatics.babraham.ac.uk/projects/fastqc
+Available online at: 
 
 * [Phyluce](https://phyluce.readthedocs.io/en/latest/index.html) - Target enrichment data analysis    
 Faircloth BC. 2016. PHYLUCE is a software package for the analysis of conserved genomic loci. 
 Bioinformatics 32:786-788. doi:10.1093/bioinformatics/btv646.
 
-* Ultraconserved elements  
+* [Ultraconserved elements](https://www.ultraconserved.org/) 
 BC Faircloth, McCormack JE, Crawford NG, Harvey MG, Brumfield RT, Glenn TC. 2012. Ultraconserved elements anchor 
 thousands of genetic markers spanning multiple evolutionary timescales. Systematic Biology 61: 717–726. 
 doi:10.1093/sysbio/SYS004.
@@ -103,3 +105,11 @@ Bioinformatics Programmer \
 Agriculture & Agri-Food Canada \
 jackson.eyres@canada.ca
 
+## Known Issues
+* Fastq files that start with numbers fail
+* rnaSPAdes 3.13.1 sometimes with randomly fail on a sample after completing K127 
+
+AAFC Specific
+* Due to an incorrect and challenging to fix server wide implementation of OpenMPI on AAFC hardware, qsub commands should be run with
+"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing, 
+but still provides the full node resources to Spades and rnaSPAdes

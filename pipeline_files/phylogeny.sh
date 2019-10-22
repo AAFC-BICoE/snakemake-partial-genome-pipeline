@@ -1,9 +1,13 @@
 # Code to produce a default Phyluce phylogeny using Mafft and RAxML
 # Adapted from https://phyluce.readthedocs.io/en/latest/tutorial-one.html, Copyright 2012-2015, Brant C. Faircloth
 
-CORES=48
-TAXA=251
+# Conda enviroment phyenv.yml and iqtree.yml must be installed before this code will work. Provided primarily
+# as an example for generated a simple phylogeny with target enrichment data
+# Phyluce runs in a Python 2.7 environment, such as the one provided with phyenv.yml
 
+CORES=80
+TAXA=106
+conda activate phyenv
 mkdir log
 # Run Mafft
 phyluce_align_seqcap_align \
@@ -44,6 +48,14 @@ phyluce_align_get_only_loci_with_min_taxa \
     --cores $CORES \
     --log-path log
 
+phyluce_align_get_only_loci_with_min_taxa \
+    --alignments mafft-nexus-internal-trimmed-gblocks-clean \
+    --taxa $TAXA \
+    --percent 0.50 \
+    --output mafft-nexus-internal-trimmed-gblocks-clean-50p \
+    --cores $CORES \
+    --log-path log
+
 # Prepare files for RAxML
 phyluce_align_format_nexus_files_for_raxml \
     --alignments mafft-nexus-internal-trimmed-gblocks-clean-75p \
@@ -51,14 +63,15 @@ phyluce_align_format_nexus_files_for_raxml \
     --charsets \
     --log-path log
 
-cp -R mafft-nexus-internal-trimmed-gblocks-clean-75p-raxml
+phyluce_align_format_nexus_files_for_raxml \
+    --alignments mafft-nexus-internal-trimmed-gblocks-clean-50p \
+    --output mafft-nexus-internal-trimmed-gblocks-clean-50p-raxml \
+    --charsets \
+    --log-path log
 
-# Run RAxML
-cd mafft-nexus-internal-trimmed-gblocks-clean-75p-raxml
-raxmlHPC-PTHREADS-SSE3 \
-    -m GTRGAMMA \
-    -N 10 \
-    -p 19877 \
-    -n best \
-    -s mafft-nexus-internal-trimmed-gblocks-clean-75p.phylip \
-    -T $CORES
+conda activate iqtree
+cd mafft-nexus-internal-trimmed-gblocks-clean-50p-raxml
+iqtree -s mafft-nexus-internal-trimmed-gblocks-clean-50p.phylip -m MFP -bb 1000 -alrt 1000 -nt AUTO
+
+cd ../mafft-nexus-internal-trimmed-gblocks-clean-75p-raxml
+iqtree -s mafft-nexus-internal-trimmed-gblocks-clean-75p.phylip -m MFP -bb 1000 -alrt 1000 -nt AUTO
