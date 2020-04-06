@@ -49,7 +49,7 @@ To run pipeline with 32 cores and continue if some samples fail:
 ```
 snakemake --use-conda -k --cores 32 
 ```
-To save time on future runs, a central folder of conda enviroments can be called so they don't need to be repeatedly rebuilt. 
+To save time on future runs, a central folder of conda environments can be called so they don't need to be repeatedly rebuilt. 
 There is a path length limit to this feature so ensure the central folder is located in the home directory
 
 ```
