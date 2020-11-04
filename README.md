@@ -53,7 +53,7 @@ To save time on future runs, a central folder of conda environments can be calle
 There is a path length limit to this feature so ensure the central folder is located in the home directory
 
 ```
-snakemake --use-conda --conda-prefix ~/sm_envs --cores 32
+snakemake --use-conda --conda-prefix <Path To Snakemake Conda Envs> --cores 32
 ```
 ## Pipeline Overview
 ![Alt text](pipeline_files/Workflow.jpg?raw=true "Title")
@@ -132,10 +132,12 @@ Agriculture & Agri-Food Canada \
 jackson.eyres@canada.ca
 
 ## Known Issues
-* Fastq files that start with numbers fail
-* rnaSPAdes 3.13.1 sometimes with randomly fail on a sample after completing K127 
+* Fastq files that start with numbers fail with Phyluce
+* rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
+A workaround is to choose one of the K*** assemblies, and copy and rename it to transcripts.fasta in the higher level directory.
+Snakemake requires a transcripts.fasta for each rnaspades assembly to progress to Phyluce.   
 
-AAFC Specific
-* Due to an incorrect and challenging to fix server wide implementation of OpenMPI on AAFC hardware, qsub commands should be run with
-"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing, 
-but still provides the full node resources to Spades and rnaSPAdes
+* AAFC Specific
+ Due to an incorrect and challenging to fix server wide implementation of OpenMPI, qsub commands should be run with
+"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing. 
+However Spades and rnaSPAdes appear to still use multiple cores as assigned via snakemake jobs 
