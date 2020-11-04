@@ -49,14 +49,40 @@ To run pipeline with 32 cores and continue if some samples fail:
 ```
 snakemake --use-conda -k --cores 32 
 ```
-To save time on future runs, a central folder of conda enviroments can be called so they don't need to be repeatedly rebuilt. 
+To save time on future runs, a central folder of conda environments can be called so they don't need to be repeatedly rebuilt. 
 There is a path length limit to this feature so ensure the central folder is located in the home directory
 
 ```
-snakemake --use-conda --conda-prefix ~/sm_envs --cores 32
+snakemake --use-conda --conda-prefix <Path To Snakemake Conda Envs> --cores 32
 ```
 ## Pipeline Overview
 ![Alt text](pipeline_files/Workflow.jpg?raw=true "Title")
+
+## Pipleine Summary
+This pipeline was heavily inspired by and closely followed protocols developed by Dr. Brant Faircloth and prescribed in 
+[Tutorial I: UCE Phylogenomics](https://phyluce.readthedocs.io/en/latest/tutorial-one.html). Software versions employed 
+and specific parameters and commands are available in the Conda yml environment files and the Snakefile respectively. 
+  
+Illumina paired end reads from target enrichment sequencing are trimmed of adaptors using BBDuk. A copy of the trimmed 
+fastq reads are merged using BBMerge. The unmerged reads are assembled using SPAdes, rnaSPAdes and Abyss. Merging paired 
+end reads prior to assembly with Abyss demonstrated a noticeable impact on the number of detected targets when using Phyluce. 
+Merging reads had neglible impact with SPAdes and rnaSPAdes. Therefore the merged reads were assembled using Abyss. 
+
+Phyluce, along with the corresponding probe set used in the target enrichment experiment is used to process each assembly 
+independently. This generates four separate Phyluce databases of probe hits and UCE target contigs. Due to the heavy 
+variation in target detection depending on assembly method, we opted to combine all detected targets into a unique set 
+per sample. The custom script merge_uces.py examines each sample, and all detected UCEs across the four assemblies. 
+It combines all targets, and keeps only the longest of any targets found in multiple assemblies. This unique set of 
+merged targets dramatically increases the amount of data available for Phylogeny. However, the unadulterated assemblies 
+are available for processing if required. 
+
+The merged targets are concatenated into a single file which is a substitute of the Phyluce generated 
+all-taxa-incomplete.fasta file that is the entry point for the Phyluce phylogeny workflow. 
+A rapid phylogeny is generated for quality control examination. Example commands are provided in the script phylogeny.sh. 
+Phyluce aligns all UCE targets using Mafft, trims the alignments using Gblocks, and removes any targets not present in 
+50% or more of samples. The generated phylip file serves as the entry point for RAxML or IQTree which produces a rapid 
+phylogeny for the purposes of quality control and detecting sample or sequencing errors. 
+
 ## Copyright
 Government of Canada, Agriculture & Agri-Food Canada
 
@@ -106,10 +132,12 @@ Agriculture & Agri-Food Canada \
 jackson.eyres@canada.ca
 
 ## Known Issues
-* Fastq files that start with numbers fail
-* rnaSPAdes 3.13.1 sometimes with randomly fail on a sample after completing K127 
+* Fastq files that start with numbers fail with Phyluce
+* rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
+A workaround is to choose one of the K*** assemblies, and copy and rename it to transcripts.fasta in the higher level directory.
+Snakemake requires a transcripts.fasta for each rnaspades assembly to progress to Phyluce.   
 
-AAFC Specific
-* Due to an incorrect and challenging to fix server wide implementation of OpenMPI on AAFC hardware, qsub commands should be run with
-"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing, 
-but still provides the full node resources to Spades and rnaSPAdes
+* AAFC Specific
+ Due to an incorrect and challenging to fix server wide implementation of OpenMPI, qsub commands should be run with
+"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing. 
+However Spades and rnaSPAdes appear to still use multiple cores as assigned via snakemake jobs 
