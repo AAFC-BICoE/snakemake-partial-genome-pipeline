@@ -8,7 +8,7 @@ Heavily follows the Phyluce methodology outlined in
 2) Assembles trimmed and merged reads [Abyss](http://www.bcgsc.ca/platform/bioinfo/software/abyss), [SPAdes, rnaSPAdes](http://cab.spbu.ru/software/spades/)
 3) Detects and extracts target contigs [Phyluce](https://phyluce.readthedocs.io/en/latest/index.html) 
 4) Summary statistics on targets and assemblies [BBTools Stats](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/statistics-guide/)
-
+5) Optional scripts and starting points to perform phylogenic inference 
 ### Prerequisites
 
 * [Conda 4.7.10+](https://conda.io/docs/user-guide/install/index.html)
@@ -41,7 +41,7 @@ TAACAATA....
 AAGCATCT...
 ```
 
-Dry-run to see if everything prepared correctly
+Dry-run to see if everything is prepared correctly
 ```
 snakemake --use-conda -n
 ```
@@ -83,11 +83,31 @@ Phyluce aligns all UCE targets using Mafft, trims the alignments using Gblocks, 
 50% or more of samples. The generated phylip file serves as the entry point for RAxML or IQTree which produces a rapid 
 phylogeny for the purposes of quality control and detecting sample or sequencing errors. 
 
+## Author
+Jackson Eyres \
+Bioinformatics Programmer \
+Agriculture & Agri-Food Canada \
+jackson.eyres@canada.ca
+
 ## Copyright
 Government of Canada, Agriculture & Agri-Food Canada
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+## Publications & Additional Resources 
+1)	Brunke, A J., Hansen, A. K., Salnitska, M., Kypke, J. L., Escalona, H., Chapados, J.T., Eyres, J., Richter, R., Smetana, A., Ślipiński, A., Zwick, A., Hájek, J., Leschen, R., Solodovnikov, A. and Dettman, J.R. The limits of Quediini at last (Coleoptera: Staphylinidae: Staphylininae): a rove beetle mega-radiation resolved by comprehensive sampling and anchored phylogenomics. Systematic Entomology. Accepted. 1–36.
+
+## Known Issues
+* Fastq files that start with numbers fail with Phyluce
+* rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
+A workaround is to choose one of the K*** assemblies, and copy and rename it to transcripts.fasta in the higher level directory.
+Snakemake requires a transcripts.fasta for each rnaspades assembly to progress to Phyluce.   
+
+* AAFC Specific
+ Due to an incorrect and challenging to fix server wide implementation of OpenMPI, qsub commands should be run with
+"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing. 
+However Spades and rnaSPAdes appear to still use multiple cores as assigned via snakemake jobs 
 
 ## Citations
 
@@ -124,20 +144,3 @@ doi:10.1093/sysbio/SYS004.
 Shaun D Jackman, Benjamin P Vandervalk, Hamid Mohamadi, Justin Chu, Sarah Yeo, S Austin Hammond, Golnaz Jahesh, 
 Hamza Khan, Lauren Coombe, René L Warren, and Inanc Birol (2017). ABySS 2.0: Resource-efficient assembly of large 
 genomes using a Bloom filter. Genome research, 27(5), 768-777. doi:10.1101/gr.214346.116
-
-## Author
-Jackson Eyres \
-Bioinformatics Programmer \
-Agriculture & Agri-Food Canada \
-jackson.eyres@canada.ca
-
-## Known Issues
-* Fastq files that start with numbers fail with Phyluce
-* rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
-A workaround is to choose one of the K*** assemblies, and copy and rename it to transcripts.fasta in the higher level directory.
-Snakemake requires a transcripts.fasta for each rnaspades assembly to progress to Phyluce.   
-
-* AAFC Specific
- Due to an incorrect and challenging to fix server wide implementation of OpenMPI, qsub commands should be run with
-"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing. 
-However Spades and rnaSPAdes appear to still use multiple cores as assigned via snakemake jobs 
