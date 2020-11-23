@@ -58,7 +58,7 @@ snakemake --use-conda --conda-prefix <Path To Snakemake Conda Envs> --cores 32
 ## Pipeline Overview
 ![Alt text](pipeline_files/Workflow.jpg?raw=true "Title")
 
-## Pipleine Summary
+## Pipeline Summary
 This pipeline was heavily inspired by and closely followed protocols developed by Dr. Brant Faircloth and prescribed in 
 [Tutorial I: UCE Phylogenomics](https://phyluce.readthedocs.io/en/latest/tutorial-one.html). Software versions employed 
 and specific parameters and commands are available in the Conda yml environment files and the Snakefile respectively. 
@@ -96,8 +96,8 @@ Government of Canada, Agriculture & Agri-Food Canada
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
 ## Publications & Additional Resources 
-1)	Brunke, A J., Hansen, A. K., Salnitska, M., Kypke, J. L., Escalona, H., Chapados, J.T., Eyres, J., Richter, R., Smetana, A., Ślipiński, A., Zwick, A., Hájek, J., Leschen, R., Solodovnikov, A. and Dettman, J.R. The limits of Quediini at last (Coleoptera: Staphylinidae: Staphylininae): a rove beetle mega-radiation resolved by comprehensive sampling and anchored phylogenomics. Systematic Entomology. Accepted. 1–36.
-
+1)	Brunke, A J., Hansen, A. K., Salnitska, M., Kypke, J. L., Escalona, H., Chapados, J.T., Eyres, J., Richter, R., Smetana, A., Ślipiński, A., Zwick, A., Hájek, J., Leschen, R., Solodovnikov, A. and Dettman, J.R. The limits of Quediini at last (Coleoptera: Staphylinidae: Staphylininae): a rove beetle mega-radiation resolved by comprehensive sampling and anchored phylogenomics. Systematic Entomology. Accepted. 1–36.  
+2) Dr. Adam Brunke provides some further [custom phylogeny instructions](https://github.com/brunkea/Quediini-phylo)
 ## Known Issues
 * Fastq files that start with numbers fail with Phyluce
 * rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
