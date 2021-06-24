@@ -71,12 +71,12 @@ Merging reads had neglible impact with SPAdes and rnaSPAdes. Therefore the merge
 Phyluce, along with the corresponding probe set used in the target enrichment experiment is used to process each assembly 
 independently. This generates four separate Phyluce databases of probe hits and UCE target contigs. Due to the heavy 
 variation in target detection depending on assembly method, we opted to combine all detected targets into a unique set 
-per sample. The custom script merge_uces.py examines each sample, and all detected UCEs across the four assemblies. 
+per sample. The custom script merge_uces.py examines each sample and all detected UCEs across the four assemblies. 
 It combines all targets, and keeps only the longest of any targets found in multiple assemblies. This unique set of 
 merged targets dramatically increases the amount of data available for Phylogeny. However, the unadulterated assemblies 
 are available for processing if required. 
 
-The merged targets are concatenated into a single file which is a substitute of the Phyluce generated 
+The merged targets are concatenated into a single file which is a substitute of the Phyluce-generated 
 all-taxa-incomplete.fasta file that is the entry point for the Phyluce phylogeny workflow. 
 A rapid phylogeny is generated for quality control examination. Example commands are provided in the script phylogeny.sh. 
 Phyluce aligns all UCE targets using Mafft, trims the alignments using Gblocks, and removes any targets not present in 
@@ -87,7 +87,7 @@ phylogeny for the purposes of quality control and detecting sample or sequencing
 Jackson Eyres \
 Bioinformatics Programmer \
 Agriculture & Agri-Food Canada \
-jackson.eyres@canada.ca
+jackson.eyres@agr.gc.ca
 
 ## Copyright
 Government of Canada, Agriculture & Agri-Food Canada
@@ -97,17 +97,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Publications & Additional Resources 
 1)	Brunke, A J., Hansen, A. K., Salnitska, M., Kypke, J. L., Escalona, H., Chapados, J.T., Eyres, J., Richter, R., Smetana, A., Ślipiński, A., Zwick, A., Hájek, J., Leschen, R., Solodovnikov, A. and Dettman, J.R. The limits of Quediini at last (Coleoptera: Staphylinidae: Staphylininae): a rove beetle mega-radiation resolved by comprehensive sampling and anchored phylogenomics. Systematic Entomology. Accepted. 1–36.  
-2) Dr. Adam Brunke provides some further [custom phylogeny instructions](https://github.com/brunkea/Quediini-phylo)
 ## Known Issues
 * Fastq files that start with numbers fail with Phyluce
-* rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
+* rnaSPAdes 3.13.1 sometimes randomly fails to generate a transcripts.fasta on a sample after completing K127. 
 A workaround is to choose one of the K*** assemblies, and copy and rename it to transcripts.fasta in the higher level directory.
-Snakemake requires a transcripts.fasta for each rnaspades assembly to progress to Phyluce.   
+Snakemake requires a transcripts.fasta for each rnaSPAdes assembly to progress to Phyluce.   
 
-* AAFC Specific
- Due to an incorrect and challenging to fix server wide implementation of OpenMPI, qsub commands should be run with
-"qsub -pe smp 1" which prevents abyss from starting in parallel mode and crashing. 
-However Spades and rnaSPAdes appear to still use multiple cores as assigned via snakemake jobs 
+* AAFC-Specific:
+ Due to an incorrect and challenging-to-fix server-wide implementation of OpenMPI, qsub commands should be run with
+"qsub -pe smp 1", which prevents abyss from starting in parallel mode and crashing. 
+However, SPAdes and rnaSPAdes appear to still use multiple cores as assigned via snakemake jobs.
 
 ## Citations
 
