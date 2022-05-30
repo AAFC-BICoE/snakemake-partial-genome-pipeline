@@ -98,6 +98,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Publications & Additional Resources 
 1)	Brunke, A J., Hansen, A. K., Salnitska, M., Kypke, J. L., Escalona, H., Chapados, J.T., Eyres, J., Richter, R., Smetana, A., Ślipiński, A., Zwick, A., Hájek, J., Leschen, R., Solodovnikov, A. and Dettman, J.R. The limits of Quediini at last (Coleoptera: Staphylinidae: Staphylininae): a rove beetle mega-radiation resolved by comprehensive sampling and anchored phylogenomics. Systematic Entomology. Accepted. 1–36.  
 2) Dr. Adam Brunke provides some further [custom phylogeny instructions](https://github.com/brunkea/Quediini-phylo)
+3) Douglas HB, Kundrata R, Brunke AJ, Escalona HE, Chapados JT, Eyres J, Richter R, Savard K, Ślipiński A, McKenna D, Dettman JR. Anchored Phylogenomics, Evolution and Systematics of Elateridae: Are All Bioluminescent Elateroidea Derived Click Beetles? Biology. 2021; 10(6):451. https://doi.org/10.3390/biology10060451
+4) Hai D. T. Nguyen, Wayne McCormick, Jackson Eyres, Quinn Eggertson, Sarah Hambleton & Jeremy R. Dettman (2021) Development and evaluation of a target enrichment bait set for phylogenetic analysis of oomycetes, Mycologia, 113:4, 856-867, DOI: https://doi.org/10.1080/00275514.2021.1889276
+
 ## Known Issues
 * Fastq files that start with numbers fail with Phyluce
 * rnaSPAdes 3.13.1 sometimes with randomly fails to generate a transcripts.fasta on a sample after completing K127. 
